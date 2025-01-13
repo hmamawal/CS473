@@ -2,11 +2,18 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vector>
-
 #include <iostream>
+
+// Declare a global glm::vec4 variable to store the clear color
+glm::vec4 clearColor(0.0, 0.0, 0.0, 1.0);
+
+// Declare a boolean array to track key states
+bool keyPressed[3] = { false, false, false };
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void PrintColor(const glm::vec4& color);
+void handleColorChange(GLFWwindow *window, int key, float& colorComponent, int index);
 
 // settings
 const int WIN_WIDTH = 800;
@@ -52,7 +59,7 @@ int main()
 
         // render
         // ------
-        glClearColor(rgba[0], rgba[1], rgba[2], rgba[3]);
+        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -73,6 +80,30 @@ void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    
+    handleColorChange(window, GLFW_KEY_R, clearColor.r, 0);
+    handleColorChange(window, GLFW_KEY_G, clearColor.g, 1);
+    handleColorChange(window, GLFW_KEY_B, clearColor.b, 2);
+}
+
+// Handle color change for a specific key and color component
+void handleColorChange(GLFWwindow *window, int key, float& colorComponent, int index)
+{
+    if(glfwGetKey(window, key) == GLFW_PRESS && !keyPressed[index]) {
+        colorComponent = std::min(colorComponent + 0.1f, 1.0f); // Increase color component, cap at 1.0
+        if (colorComponent > 1.0f) colorComponent = 0.0f; // Reset if above 1.0
+        PrintColor(clearColor);
+        keyPressed[index] = true;
+    }
+    if(glfwGetKey(window, key) == GLFW_RELEASE) {
+        keyPressed[index] = false;
+    }
+}
+
+// Print the current clear color to the console
+void PrintColor(const glm::vec4& color)
+{
+    std::cout << "Clear Color - R: " << color.r << ", G: " << color.g << ", B: " << color.b << ", A: " << color.a << std::endl;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
