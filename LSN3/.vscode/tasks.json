@@ -4,13 +4,19 @@
             "type": "cppbuild",
             "label": "C/C++: g++.exe build active file",
             "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
-            ],
+            "args": [ 
+                "-g", 
+                "${file}", 
+                "glad.c", 
+                "vertex_attribute.cpp",
+                "-IC:\\msys64\\ucrt64\\include", 
+                "-lglfw3", 
+                "-lgdi32", 
+                "-lglu32", 
+                "-lopengl32", 
+                "-o", 
+                "${fileDirname}\\${fileBasenameNoExtension}.exe" 
+                ], 
             "options": {
                 "cwd": "${fileDirname}"
             },
