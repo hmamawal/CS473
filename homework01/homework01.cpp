@@ -10,6 +10,9 @@ glm::vec4 clearColor(0.0, 0.0, 0.0, 1.0);
 // Declare a boolean array to track key states
 bool keyPressed[3] = { false, false, false };
 
+// declare a boolean array to track if a color was just printed
+bool colorPrinted[3] = { true, true, true };
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void PrintColor(const glm::vec4& color);
@@ -90,13 +93,41 @@ void processInput(GLFWwindow *window)
 void handleColorChange(GLFWwindow *window, int key, float& colorComponent, int index)
 {
     if(glfwGetKey(window, key) == GLFW_PRESS && !keyPressed[index]) {
-        colorComponent = colorComponent += 0.1f; // Increase color component, cap at 1.0
-        if (colorComponent > 1.0f) colorComponent = 0.0f; // Reset if above 1.0
-        PrintColor(clearColor);
-        keyPressed[index] = true;
+        // if the key is for the color red, then wait to print until the key is released
+        if(key == GLFW_KEY_R){
+            colorComponent = colorComponent += 0.01f; // Increase color component, cap at 1.0
+            if (colorComponent > 1.0f) colorComponent = 0.0f; // Reset if above 1.0
+            colorPrinted[index] = false;
+        }
+        // if the key is blue, then the blue channel is set to 1.0. it only stays at 1.0 while blue is held down, then goes back to 0.0 when released
+        else if(key == GLFW_KEY_B){
+            colorComponent = 1.0f;
+            colorPrinted[index] = false;
+        }
+        else if(key == GLFW_KEY_G){
+            colorComponent = colorComponent += 0.1f; // Increase color component, cap at 1.0
+            if (colorComponent > 1.0f) colorComponent = 0.0f; // Reset if above 1.0
+            PrintColor(clearColor);
+            keyPressed[index] = true;
+        }
     }
     if(glfwGetKey(window, key) == GLFW_RELEASE) {
         keyPressed[index] = false;
+        if (key == GLFW_KEY_R){
+            //PrintColor(clearColor);
+            if (colorPrinted[index]==false){
+                PrintColor(clearColor);
+                colorPrinted[index] = true;
+            }
+        }
+        if (key == GLFW_KEY_B){
+            colorComponent = 0.0f;
+            //PrintColor(clearColor);
+            if (colorPrinted[index]==false){
+                PrintColor(clearColor);
+                colorPrinted[index] = true;
+            }
+        }
     }
 }
 
