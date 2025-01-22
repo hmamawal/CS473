@@ -90,7 +90,7 @@ void processInput(GLFWwindow *window)
 void handleColorChange(GLFWwindow *window, int key, float& colorComponent, int index)
 {
     if(glfwGetKey(window, key) == GLFW_PRESS && !keyPressed[index]) {
-        colorComponent = std::min(colorComponent + 0.1f, 1.0f); // Increase color component, cap at 1.0
+        colorComponent = colorComponent += 0.1f; // Increase color component, cap at 1.0
         if (colorComponent > 1.0f) colorComponent = 0.0f; // Reset if above 1.0
         PrintColor(clearColor);
         keyPressed[index] = true;
