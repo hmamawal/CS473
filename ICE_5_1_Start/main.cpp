@@ -50,6 +50,10 @@ int main () {
     position_vao.attributes.push_back(position_attr);
     BasicShape triangle = GetTriangle(position_vao,0.5,glm::vec3(-0.5,0.3,0.0));
     BasicShape circle = GetCircle(position_vao,0.2,40,glm::vec3(-0.5,0.1,0.0));
+
+    //BasicShape hull = GetHull(position_vao,glm::vec3(0.0, 0.0, 0.0),0.5,0.5);
+    //BasicShape hull = GetHull(position_vao, 0.3, glm::vec3(0.5, -0.5, 0.0));
+
     //Set up the EBO
     glBindVertexArray(position_vao.id);
     glBindBuffer(GL_ARRAY_BUFFER,rect_VBO);
@@ -67,6 +71,7 @@ int main () {
     while (!glfwWindowShouldClose(window)) {
         //input
         processInput(window);
+        //shader.setVec4("offset_vec",offset_vec); 
 
         //render commands here
         //set the clear color to wipe the window
@@ -76,21 +81,32 @@ int main () {
         //clear the color buffer (where things are drawn) using the current clear color.
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glm::vec4 outline_color(1.0,0.0,0.0,1.0);
         shader.setVec4("set_color",glm::vec4(0.9,0.9,0.0,1.0));
         triangle.Draw();
+        shader.setVec4("set_color",glm::vec4(outline_color));
         shader.setVec4("set_color",glm::vec4(0.3,0.7,0.3,1.0));
         circle.Draw();
+        //glLineWidth(3.0);
+        shader.setVec4("set_color",glm::vec4(outline_color));
+        circle.DrawEBO();
+        //glLineWidth(1.0);
+
+        // shader.setVec4("set_color",glm::vec4(0.5, 0.5, 0.5, 1.0));
+        // hull.Draw();
+        // shader.setVec4("set_color",outline_color);
+        // hull.DrawEBO();
         
         //Draw EBO
-        shader.setVec4("set_color",glm::vec4(1.0,0.0,0.0,1.0));
-        BindVAO(position_vao,rect_VBO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
-        glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
+        // shader.setVec4("set_color",glm::vec4(1.0,0.0,0.0,1.0));
+        // BindVAO(position_vao,rect_VBO);
+        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
+        // glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
 
-        shader.setVec4("set_color",glm::vec4(1.0,1.0,1.0,1.0));
-        glLineWidth(3.0);
-        glDrawElements(GL_LINE_LOOP,6,GL_UNSIGNED_INT,0);
-        glLineWidth(1.0);
+        // shader.setVec4("set_color",glm::vec4(1.0,1.0,1.0,1.0));
+        // glLineWidth(3.0);
+        // glDrawElements(GL_LINE_LOOP,6,GL_UNSIGNED_INT,0);
+        // glLineWidth(1.0);
         
 
         //check and call events and swap the buffers

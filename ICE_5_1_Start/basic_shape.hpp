@@ -14,6 +14,12 @@ class BasicShape {
         int number_vbo_vertices = 0;
         bool vbo_delete = false;
         GLuint primitive;
+        unsigned int ebo_id = 0;
+        int ebo_number_indices = 0;
+        bool ebo_initialized = false;
+        int ebo_primitive = GL_LINE_LOOP;
+
+
     public:
         //Takes no inputs and returns a BasicShape object with default values for all data members.
         BasicShape();
@@ -21,6 +27,12 @@ class BasicShape {
         //Initializes the BasicShape data members with provided VAOStruct, vertex data, and primitive.
         //  Also generates a new VBO and assigns the buffer ID to a vbo data member.  Returns nothing.
         void Initialize(VAOStruct vao, float *vertex_data, int data_byte_size, int number_vertices,int primitive=GL_TRIANGLES);
+
+        // initialized an EBO for a Basic Shape
+        void InitializeEBO (unsigned int *indices, int number_indices, int primitive = GL_LINE_LOOP);
+
+        // draws the EBO (assumes the shader is already in use)
+        void DrawEBO ();
 
         //Draws the object using the provided shader program.
         //  Assuming that the object's vao and vbo have been initialized.
