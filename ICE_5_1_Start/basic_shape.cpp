@@ -25,7 +25,6 @@ void BasicShape::InitializeEBO (unsigned int *indices, int number_indices, int p
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,this->ebo_id);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,number_indices*sizeof(unsigned int),indices,GL_STATIC_DRAW);
     this->ebo_number_indices = number_indices;
-    //this->ebo_primitive = primitive;
     this->ebo_initialized = true;
     glBindBuffer(GL_ARRAY_BUFFER,0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);

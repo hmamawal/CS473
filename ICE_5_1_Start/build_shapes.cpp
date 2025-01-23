@@ -46,7 +46,7 @@ BasicShape GetCircle (VAOStruct vao, float radius, int points, glm::vec3 locatio
     return new_shape;
 }
 
-BasicShape GetHull (VAOStruct vao, glm::vec3 location, float width, float height) {
+BasicShape GetHull(VAOStruct vao, float width, float height, glm::vec3 location) {
     float vertices[] {
         location.x, location.y, location.z, //bottom left
         location.x+width, location.y, location.z, //bottom right
@@ -56,11 +56,11 @@ BasicShape GetHull (VAOStruct vao, glm::vec3 location, float width, float height
     };
     
     BasicShape new_shape;
-    new_shape.Initialize(vao, vertices, sizeof(vertices), 4, GL_TRIANGLE_FAN);
+    new_shape.Initialize(vao, vertices, sizeof(vertices), 5, GL_TRIANGLE_FAN);
 
-    unsigned int indices[] = {0,1,2,3};
+    unsigned int indices[] = {0,1,2,3,4};
     // set the ebo for the shape here
-    new_shape.InitializeEBO(indices, 4, GL_LINE_LOOP);
+    new_shape.InitializeEBO(indices, 5, GL_LINE_LOOP);
 
     return new_shape;
 }

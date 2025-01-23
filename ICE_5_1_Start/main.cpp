@@ -50,9 +50,8 @@ int main () {
     position_vao.attributes.push_back(position_attr);
     BasicShape triangle = GetTriangle(position_vao,0.5,glm::vec3(-0.5,0.3,0.0));
     BasicShape circle = GetCircle(position_vao,0.2,40,glm::vec3(-0.5,0.1,0.0));
+    BasicShape hull = GetHull(position_vao, 0.3, 0.3, glm::vec3(0.5, -0.5, 0.0));
 
-    //BasicShape hull = GetHull(position_vao,glm::vec3(0.0, 0.0, 0.0),0.5,0.5);
-    //BasicShape hull = GetHull(position_vao, 0.3, glm::vec3(0.5, -0.5, 0.0));
 
     //Set up the EBO
     glBindVertexArray(position_vao.id);
@@ -92,21 +91,10 @@ int main () {
         circle.DrawEBO();
         //glLineWidth(1.0);
 
-        // shader.setVec4("set_color",glm::vec4(0.5, 0.5, 0.5, 1.0));
-        // hull.Draw();
-        // shader.setVec4("set_color",outline_color);
-        // hull.DrawEBO();
-        
-        //Draw EBO
-        // shader.setVec4("set_color",glm::vec4(1.0,0.0,0.0,1.0));
-        // BindVAO(position_vao,rect_VBO);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
-        // glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
-
-        // shader.setVec4("set_color",glm::vec4(1.0,1.0,1.0,1.0));
-        // glLineWidth(3.0);
-        // glDrawElements(GL_LINE_LOOP,6,GL_UNSIGNED_INT,0);
-        // glLineWidth(1.0);
+        shader.setVec4("set_color", glm::vec4(0.5, 0.5, 0.5, 1.0));
+        hull.Draw();
+        shader.setVec4("set_color", outline_color);
+        hull.DrawEBO();
         
 
         //check and call events and swap the buffers
@@ -162,6 +150,3 @@ void processInput(GLFWwindow *window)
         }
     }
 }
-
-
-
