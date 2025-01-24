@@ -92,6 +92,11 @@ int main () {
         glDrawElements(GL_LINE_LOOP,6,GL_UNSIGNED_INT,0);
         glLineWidth(1.0);
         
+        // Draw outlines for triangle and circle
+        shader.setVec4("set_color", glm::vec4(1.0, 0.0, 0.0, 1.0)); // Set outline color to red
+        triangle.DrawEBO(1.0f); // Draw triangle outline
+        shader.setVec4("set_color", glm::vec4(0.0, 0.0, 1.0, 1.0)); // Set outline color to blue
+        circle.DrawEBO(1.0f); // Draw circle outline
 
         //check and call events and swap the buffers
 
@@ -146,6 +151,3 @@ void processInput(GLFWwindow *window)
         }
     }
 }
-
-
-
