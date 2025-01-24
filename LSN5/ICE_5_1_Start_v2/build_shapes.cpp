@@ -41,3 +41,66 @@ BasicShape GetCircle(VAOStruct vao, float radius, int points, glm::vec3 location
 
     return new_shape;
 }
+
+BasicShape GetShipHull(VAOStruct vao, glm::vec3 location) {
+    float hull_vert[] {
+        -0.5, -0.5, 0.0, // bottom left vertex
+        0.5, -0.5, 0.0,  // bottom right vertex
+        0.3, 0.0, 0.0,   // top right vertex
+        -0.3, 0.0, 0.0   // top left vertex
+    };
+    for (int i = 0; i < 4; i++) {
+        hull_vert[3 * i] += location.x;
+        hull_vert[3 * i + 1] += location.y;
+        hull_vert[3 * i + 2] += location.z;
+    }
+    BasicShape new_shape;
+    new_shape.Initialize(vao, hull_vert, sizeof(hull_vert), 4, GL_TRIANGLE_FAN);
+
+    unsigned int indices[] = { 0, 1, 2, 3 };
+    new_shape.InitializeEBO(indices, sizeof(indices), 4, GL_TRIANGLE_FAN);
+
+    return new_shape;
+}
+
+BasicShape GetWindshield(VAOStruct vao, glm::vec3 location) {
+    float windshield_vert[] {
+        -0.2, 0.0, 0.0, // bottom left vertex
+        0.2, 0.0, 0.0,  // bottom right vertex
+        0.1, 0.3, 0.0,  // top right vertex
+        -0.1, 0.3, 0.0  // top left vertex
+    };
+    for (int i = 0; i < 4; i++) {
+        windshield_vert[3 * i] += location.x;
+        windshield_vert[3 * i + 1] += location.y;
+        windshield_vert[3 * i + 2] += location.z;
+    }
+    BasicShape new_shape;
+    new_shape.Initialize(vao, windshield_vert, sizeof(windshield_vert), 4, GL_TRIANGLE_FAN);
+
+    unsigned int indices[] = { 0, 1, 2, 3 };
+    new_shape.InitializeEBO(indices, sizeof(indices), 4, GL_TRIANGLE_FAN);
+
+    return new_shape;
+}
+
+BasicShape GetCannon(VAOStruct vao, glm::vec3 location) {
+    float cannon_vert[] {
+        -0.05, -0.1, 0.0, // bottom left vertex
+        0.05, -0.1, 0.0,  // bottom right vertex
+        0.05, 0.1, 0.0,   // top right vertex
+        -0.05, 0.1, 0.0   // top left vertex
+    };
+    for (int i = 0; i < 4; i++) {
+        cannon_vert[3 * i] += location.x;
+        cannon_vert[3 * i + 1] += location.y;
+        cannon_vert[3 * i + 2] += location.z;
+    }
+    BasicShape new_shape;
+    new_shape.Initialize(vao, cannon_vert, sizeof(cannon_vert), 4, GL_TRIANGLE_FAN);
+
+    unsigned int indices[] = { 0, 1, 2, 3 };
+    new_shape.InitializeEBO(indices, sizeof(indices), 4, GL_TRIANGLE_FAN);
+
+    return new_shape;
+}

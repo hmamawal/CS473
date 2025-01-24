@@ -34,7 +34,6 @@ void BasicShape::Draw (Shader shader)
 {
     glUseProgram(shader.ID);
     this->Draw();
-    
 }
 
 void BasicShape::Draw ()
@@ -46,17 +45,25 @@ void BasicShape::Draw ()
 void BasicShape::DrawEBO(float lineWidth)
 {
     if (this->ebo_init) {
+        // Store the current line width
+        GLfloat currentWidth;
+        glGetFloatv(GL_LINE_WIDTH, &currentWidth);
+
         BindVAO(this->vao, this->vbo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
         glLineWidth(lineWidth);
         glDrawElements(this->ebo_primitive, this->number_ebo_indices, GL_UNSIGNED_INT, 0);
-        glLineWidth(1.0f);
+        
+        // Restore previous line width
+        glLineWidth(currentWidth);
     }
 }
 
 BasicShape::~BasicShape() {
-
     if (this->vbo_delete) {
         glDeleteBuffers(1, &(this->vbo));
+    }
+    if (this->ebo_delete) {
+        glDeleteBuffers(1, &(this->ebo));
     }
 }
