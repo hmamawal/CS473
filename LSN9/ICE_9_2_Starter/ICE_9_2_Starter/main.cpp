@@ -16,6 +16,8 @@ void processInput(GLFWwindow *window);
 //Global Variables
 glm::vec4 clear_color(0.0,0.0,0.0,1.0);
 glm::vec4 outline_color = glm::vec4(0.0,0.0,0.0,1.0);
+float angle_x = 0.0f;
+float angle_z = 0.0f;
 
 bool clear_key_pressed[] {false,false,false};
 
@@ -48,6 +50,23 @@ int main () {
 
 
     BasicShape bottom = GetTextureRectangle(texture_vao,glm::vec3(-0.25,-0.25,0.0),0.5,0.5);
+    BasicShape front_side = GetTexturedTriangle(texture_vao,glm::vec3(-0.25,-0.25,0.0),
+                                          glm::vec3(0.25,-0.25,0.0),
+                                          glm::vec3(0.0,0.0,0.5));
+    // now make a right_side one
+    BasicShape right_side = GetTexturedTriangle(texture_vao,glm::vec3(0.25,-0.25,0.0),
+                                          glm::vec3(0.25,0.25,0.0),
+                                          glm::vec3(0.0,0.0,0.5));
+
+    // now back side
+    BasicShape back_side = GetTexturedTriangle(texture_vao,glm::vec3(0.25,0.25,0.0),
+                                          glm::vec3(-0.25,0.25,0.0),
+                                          glm::vec3(0.0,0.0,0.5));
+
+    // now left side
+    BasicShape left_side = GetTexturedTriangle(texture_vao,glm::vec3(-0.25,0.25,0.0),
+                                          glm::vec3(-0.25,-0.25,0.0),
+                                          glm::vec3(0.0,0.0,0.5));
     
     
     shader.use();
@@ -63,7 +82,7 @@ int main () {
     projection = glm::perspective(glm::radians(45.0f),1.0f,0.1f,100.0f);
     model = glm::rotate(model,glm::radians(-45.0f),glm::vec3(1.0,0.0,0.0));
 
-
+    glEnable(GL_DEPTH_TEST);
     //The render loop -- the function in the condition checks if the 
     //  window has been set to close (does this each iteration)
     while (!glfwWindowShouldClose(window)) {
@@ -71,6 +90,9 @@ int main () {
         processInput(window);
         
         //set the model matrix to the identity matrix
+        local = identity;
+        local = glm::rotate(local,glm::radians(angle_x),glm::vec3(1.0,0.0,0.0));
+        local = glm::rotate(local,glm::radians(angle_z),glm::vec3(0.0,0.0,1.0));
         shader.setMat4("local",local);
         shader.setMat4("model",model);
         shader.setMat4("view",view);
@@ -83,12 +105,17 @@ int main () {
 
 
         //clear the color buffer (where things are drawn) using the current clear color.
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //render the shapes here
         glBindTexture(GL_TEXTURE_2D,tile_texture);
         shader.setBool("is_textured",true);
         bottom.Draw();
+        glBindTexture(GL_TEXTURE_2D,wood_texture);
+        front_side.Draw();
+        right_side.Draw();
+        back_side.Draw();
+        left_side.Draw();
 
 
         //check and call events and swap the buffers
@@ -112,6 +139,20 @@ void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // rotation processing
+    if (glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS) {
+        angle_z += 0.01;
+    }
+    if (glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        angle_z -= 0.01;
+    }
+    if (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
+        angle_x += 0.01;
+    }
+    if (glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS) {
+        angle_x -= 0.01;
+    }
 
     //Color Key Processing
     int keys[] {GLFW_KEY_R,GLFW_KEY_G,GLFW_KEY_B};
