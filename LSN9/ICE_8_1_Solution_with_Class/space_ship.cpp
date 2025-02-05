@@ -3,7 +3,7 @@
 SpaceShip::SpaceShip() {
     this->angle_z = 0.0;
     this->thrusters_fired = false;
-    this->speed = 0.01;
+    this->speed = 0.0001;
     this->velocity = glm::vec3(0.0,0.0,0.0);
     this->location = glm::vec3(0.0,0.0,0.0);
 }
@@ -115,10 +115,10 @@ void SpaceShip::ProcessInput(GLFWwindow *window) {
 
      //Use left and right arrows to rotate left and right
     if (glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS) {
-        this->angle_z += 2.0;
+        this->angle_z += 0.1;
     }
     if (glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        this->angle_z -= 2.0;
+        this->angle_z -= 0.1;
     }
 
     //When the up arrow is pressed (once) fire thrusters in the direction of the 

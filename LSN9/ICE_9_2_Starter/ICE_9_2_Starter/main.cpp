@@ -3,7 +3,6 @@
 #include "vertex_attribute.hpp"
 #include "Shader.hpp"
 #include "build_shapes.hpp"
-#include "space_ship.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -21,7 +20,7 @@ glm::vec4 outline_color = glm::vec4(0.0,0.0,0.0,1.0);
 bool clear_key_pressed[] {false,false,false};
 
 int main () {
-    GLFWwindow *window = InitializeEnvironment("ICE 8.1 with Class",800,800);
+    GLFWwindow *window = InitializeEnvironment("ICE 9.2",800,800);
     if (window == NULL) {
         return -1;
     }
@@ -30,26 +29,8 @@ int main () {
     Shader shader("./Shaders/vertex.glsl","./Shaders/fragment.glsl");
     
     //get a texture from memory
-    unsigned int space_texture = GetTexture("./images/space.jpg");
-    unsigned int hull_texture = GetTexture("./images/hull_texture.png");
-    unsigned int planet_texture = GetTexture("./images/mars.jpg");
-
-    float rect_vertices[] {
-         0.9f,  0.9f, 0.0f, // top right
-        0.9f, 0.4f, 0.0f, // bottom right
-        0.4f, 0.4f, 0.0f, // bottom left
-        0.4f,  0.9f, 0.0f   // top left 
-    };
-
-    unsigned int indices[] {
-        0,1,3,1,2,3
-    };
-
-    unsigned int rect_VBO;
-    glGenBuffers(1,&rect_VBO);
-
-    unsigned int EBO; 
-    glGenBuffers(1,&EBO);
+    unsigned int tile_texture = GetTexture("./images/tile.jpg");
+    unsigned int wood_texture = GetTexture("./images/wood.jpg");
 
 
     //1. define your Vertex Array Object, used to hold attribute pointers
@@ -65,35 +46,36 @@ int main () {
     texture_vao.attributes.push_back(position_attr2);
     texture_vao.attributes.push_back(texture_attr);
 
-    //declare your spaceship
-    SpaceShip ship;
-    ship.Initialize(position_vao,texture_vao,&shader,hull_texture);
-    BasicShape circle = GetCircle(texture_vao,0.2,40,glm::vec3(0.5,0.5,0.0),true);
-    BasicShape background = GetTextureRectangle(texture_vao,glm::vec3(-1.0,-1.0,0.0),2.0,2.0,1.0);
 
+    BasicShape bottom = GetTextureRectangle(texture_vao,glm::vec3(-0.25,-0.25,0.0),0.5,0.5);
+    
+    
     shader.use();
 
 
     glm::mat4 identity = glm::mat4(1.0f);
     glm::mat4 local = identity;
     glm::mat4 model = identity;
-    model = glm::rotate(model,glm::radians(-45.0f),glm::vec3(1.0, 0.0, 0.0)); // rotate about x axis
-    glm::mat4 view = glm::translate(identity,glm::vec3(0.0,0.0,-3.0));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f),1.0f,0.1f,100.0f);
+    glm::mat4 view = identity;
+    glm::mat4 projection = identity;
+
+    view = glm::translate(view,glm::vec3(0.0,0.0,-3.0));
+    projection = glm::perspective(glm::radians(45.0f),1.0f,0.1f,100.0f);
+    model = glm::rotate(model,glm::radians(-45.0f),glm::vec3(1.0,0.0,0.0));
+
 
     //The render loop -- the function in the condition checks if the 
     //  window has been set to close (does this each iteration)
     while (!glfwWindowShouldClose(window)) {
         //input
         processInput(window);
-        ship.ProcessInput(window);
-        ship.Update();
         
         //set the model matrix to the identity matrix
-        shader.setMat4("local",identity);
+        shader.setMat4("local",local);
         shader.setMat4("model",model);
         shader.setMat4("view",view);
         shader.setMat4("projection",projection);
+
 
         //render commands here
         //set the clear color to wipe the window
@@ -103,23 +85,11 @@ int main () {
         //clear the color buffer (where things are drawn) using the current clear color.
         glClear(GL_COLOR_BUFFER_BIT);
 
-        //Draw the background
+        //render the shapes here
+        glBindTexture(GL_TEXTURE_2D,tile_texture);
         shader.setBool("is_textured",true);
-        glBindTexture(GL_TEXTURE_2D,space_texture);
-        background.Draw();
-        shader.setBool("is_textured",false);
-        glBindTexture(GL_TEXTURE_2D,0);
+        bottom.Draw();
 
-        //Draw the planet
-        glBindTexture(GL_TEXTURE_2D,planet_texture);
-        shader.setBool("is_textured",true);
-        circle.Draw();
-        shader.setBool("is_textured",false);
-        shader.setVec4("set_color",outline_color);
-        circle.DrawEBO();
-
-        //Draw the ship
-        ship.Draw();
 
         //check and call events and swap the buffers
 

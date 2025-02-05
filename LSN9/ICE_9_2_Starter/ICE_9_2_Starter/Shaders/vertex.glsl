@@ -7,7 +7,7 @@ uniform bool is_textured;
 flat out int textured;
 out vec2 TexCoord;
 
-uniform mat4 model, local, view, projection;
+uniform mat4 projection, view, model, local;
 
 
 void main()
