@@ -8,6 +8,21 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <fstream> 
+#include <vector>
+#include <string>
+
+// load the map layout from a text file 
+std::vector<std::string> LoadMapLayout(std::string file_name) {
+    std::vector<std::string> map_layout;
+    std::ifstream file(file_name);
+    std::string line;
+    while (std::getline(file,line)) {
+        map_layout.push_back(line);
+    }
+    return map_layout;
+}
+
 
 
 //Processes user input (keyboard currently).
@@ -15,7 +30,7 @@
 void processInput(GLFWwindow *window);
 
 //Global Variables
-glm::vec4 clear_color(0.0,0.0,0.0,1.0);
+glm::vec4 clear_color(1.0, 1.0, 1.0, 1.0);
 glm::vec4 outline_color = glm::vec4(0.0,0.0,0.0,1.0);
 
 bool clear_key_pressed[] {false,false,false};
@@ -26,7 +41,9 @@ float last_frame = 0.0;
 float delta_time = 0.0;
 
 // camera global variable
-Camera camera(glm::vec3(0.0, 0.0, 3.0), glm::vec3(0.0, 1.0, 0.0), -90.0, 0.0);
+//Camera camera(glm::vec3(0.0, 0.0, 3.0), glm::vec3(0.0, 1.0, 0.0), -90.0, 0.0);
+Camera camera(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), -90.0, 0.0);
+
 
 int main () {
     GLFWwindow *window = InitializeEnvironment("ICE 9.2",800,800);
@@ -38,63 +55,39 @@ int main () {
     Shader shader("./Shaders/vertex.glsl","./Shaders/fragment.glsl");
     
     //get a texture from memory
-    unsigned int tile_texture = GetTexture("./images/tile.jpg");
     unsigned int wood_texture = GetTexture("./images/wood.jpg");
 
 
     //1. define your Vertex Array Object, used to hold attribute pointers
-    VAOStruct position_vao;
-    glGenVertexArrays(1,&(position_vao.id));
-    AttributePointer position_attr = BuildAttribute(3,GL_FLOAT,false,3*sizeof(float),0);
-    position_vao.attributes.push_back(position_attr);
-
     VAOStruct texture_vao;
     glGenVertexArrays(1,&(texture_vao.id));
-    AttributePointer position_attr2 = BuildAttribute(3,GL_FLOAT,false,5*sizeof(float),0);
+    AttributePointer position_attr = BuildAttribute(3,GL_FLOAT,false,5*sizeof(float),0);
     AttributePointer texture_attr = BuildAttribute(2,GL_FLOAT,false,5*sizeof(float),3*sizeof(float));
-    texture_vao.attributes.push_back(position_attr2);
+    texture_vao.attributes.push_back(position_attr);
     texture_vao.attributes.push_back(texture_attr);
 
+    // define cell size for the map grid
+    float cell_size = 0.5f;
 
-    BasicShape bottom = GetTextureRectangle(texture_vao,glm::vec3(-0.25,-0.25,0.0),0.5,0.5);
-    BasicShape front_side = GetTexturedTriangle(texture_vao,glm::vec3(-0.25, -0.25, 0.0),
-                                                           glm::vec3(0.25, -0.25, 0.0),
-                                                           glm::vec3(0.0,0.0,0.5));
-    
-    BasicShape right_side = GetTexturedTriangle(texture_vao,glm::vec3(0.25, -0.25, 0.0),
-                                                           glm::vec3(0.25, 0.25, 0.0),
-                                                           glm::vec3(0.0,0.0,0.5));
-    
-    BasicShape back_side = GetTexturedTriangle(texture_vao,glm::vec3(0.25, 0.25, 0.0),
-                                                           glm::vec3(-0.25, 0.25, 0.0),
-                                                           glm::vec3(0.0,0.0,0.5));
-    
-    BasicShape left_side = GetTexturedTriangle(texture_vao,glm::vec3(-0.25, 0.25, 0.0),
-                                                           glm::vec3(-0.25, -0.25, 0.0),
-                                                           glm::vec3(0.0,0.0,0.5));
-    shader.use();
-
-    std::vector<glm::vec3> pyramid_locations {
-        glm::vec3(0.0,0.0,0.0),
-        glm::vec3(1.0,0.0,0.0),
-        glm::vec3(0.0,-1.0,0.0),
-        glm::vec3(-1.0,0.0,0.0),
-        glm::vec3(0.0,1.0,0.0),
-
-    };
+    // load the layout from level.txt; note that the walls/trees are marked with '#' in the text file
+    std::vector<std::string> map_layout = LoadMapLayout("level.txt");
+    std::cout << "Loaded " << map_layout.size() << " rows." << std::endl;
+    if (!map_layout.empty())
+        std::cout << "First row: " << map_layout[0] << std::endl;
 
 
+    // for a 2d view, we'll use an orthographic projection
+    // Compute map dimensions based on level layout and cell size
+    float mapWidth  = static_cast<float>(map_layout[0].size()) * cell_size;
+    float mapHeight = static_cast<float>(map_layout.size()) * cell_size;
+
+    // Use an orthographic projection covering the entire level
+    glm::mat4 projection = glm::ortho(0.0f, mapWidth, 0.0f, mapHeight, -1.0f, 1.0f);
+    //glm::mat4 projection = glm::ortho(0.0f, 800.0f/100.0f, 0.0f, 800.0f/100.0f, -1.0f, 1.0f);
     glm::mat4 identity = glm::mat4(1.0f);
-    glm::mat4 local = identity;
-    glm::mat4 model = identity;
-    glm::mat4 view = identity;
-    glm::mat4 projection = identity;
 
-    view = glm::translate(view,glm::vec3(0.0,0.0,-4.0));
-    projection = glm::perspective(glm::radians(45.0f),1.0f,0.1f,100.0f);
-    
-
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     //The render loop -- the function in the condition checks if the 
     //  window has been set to close (does this each iteration)
     while (!glfwWindowShouldClose(window)) {
@@ -108,12 +101,12 @@ int main () {
         //input
         processInput(window);
         
-        
-        shader.setMat4("local",identity);
-        shader.setMat4("model",identity);
-        view = camera.GetViewMatrix();
-        shader.setMat4("view",view);
+        shader.use();
         shader.setMat4("projection",projection);
+        glm::mat4 view = camera.GetViewMatrix();
+        //shader.setMat4("view", glm::mat4(1.0f)); // for debugging
+        shader.setMat4("local",identity);
+        shader.setMat4("view",view);
 
 
         //render commands here
@@ -124,27 +117,21 @@ int main () {
         //clear the color buffer (where things are drawn) using the current clear color.
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (int i = 0; i < pyramid_locations.size(); i++) {
-            //set the model matrix to the identity matrix
-            local = glm::rotate(identity,glm::radians(angle_x),glm::vec3(1.0,0.0,0.0));
-            local = glm::rotate(local,glm::radians(angle_z),glm::vec3(0.0,0.0,1.0));
-            shader.setMat4("local",local);
-            model = glm::rotate(identity,glm::radians(-45.0f),glm::vec3(1.0,0.0,0.0));
-            model = glm::translate(model,pyramid_locations[i]);
-            shader.setMat4("model",model);
-
-            //render the shapes here
-            glBindTexture(GL_TEXTURE_2D,tile_texture);
-            shader.setBool("is_textured",true);
-            bottom.Draw();
-            glBindTexture(GL_TEXTURE_2D,wood_texture);
-            back_side.Draw();
-            right_side.Draw();
-            left_side.Draw();
-            front_side.Draw();
-
-        }
-
+        // iterate over the level layout and render a "tree" (wall) rectangle where a '#' is found
+        for (size_t row = 0; row < map_layout.size(); row++) {
+            for (size_t col = 0; col < map_layout[row].size(); col++) {
+                if (map_layout[row][col] == '#') {
+                    // Adjust the y position so that the first row of the file is at the bottom.
+                    glm::vec3 pos(col * cell_size, map_layout.size() * cell_size - row * cell_size, 0.0f);
+                    // Create a rectangle at position pos
+                    BasicShape tree = GetTextureRectangle(texture_vao, pos, cell_size, cell_size);
+                    //shader.setBool("is_textured", true);
+                    shader.setBool("is_textured", false);
+                    glBindTexture(GL_TEXTURE_2D, wood_texture);
+                    tree.Draw();
+                }
+            }
+        }        
         
 
 
