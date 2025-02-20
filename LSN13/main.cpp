@@ -110,6 +110,12 @@ int main () {
     shader.setVec4("point_light.diffuse", glm::vec4(1.0, 1.0, 1.0, 1.0));
     shader.setVec4("point_light.specular", glm::vec4(1.0, 1.0, 1.0, 1.0));
 
+    // Set directional light properties
+    shader.setVec4("directional_light.direction", glm::vec4(0.0, -1.0, -1.0, 0.0));
+    shader.setVec4("directional_light.ambient", glm::vec4(0.0, 1.0, 0.0, 1.0));
+    shader.setVec4("directional_light.diffuse", glm::vec4(0.0, 1.0, 0.0, 1.0));
+    shader.setVec4("directional_light.specular", glm::vec4(0.0, 1.0, 0.0, 1.0));
+
     // The render loop
     while (!glfwWindowShouldClose(window)) {
         // Calculate the delta time
