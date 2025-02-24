@@ -34,7 +34,7 @@ const float ENTITY_SIZE = 10.0f;
 // (with 5 for legs, 10 for body, and roughly 10 for the head's diameter).
 const float PLAYER_WIDTH = 10.0f;
 const float PLAYER_HEIGHT = 25.0f;
-const float PLAYER_SPEED = 10.0f;
+const float PLAYER_SPEED = 0.50f;
 
 // Maximum hearts the player can have.
 const int MAX_HEARTS = 3;
@@ -135,78 +135,96 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
     }
 }
 
+void rotatePoint(float& px, float& py, float cx, float cy, float angleDeg)
+{
+    float rad = glm::radians(angleDeg);
+    float tx = px - cx;
+    float ty = py - cy;
+
+    float cosA = cos(rad);
+    float sinA = sin(rad);
+
+    float rx = tx * cosA - ty * sinA;
+    float ry = tx * sinA + ty * cosA;
+
+    px = rx + cx;
+    py = ry + cy;
+}
+
 // ------------------------------
 // NEW: Render the player as a composite shape
 // ------------------------------
-void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO) {
-    // Define dimensions for the composite parts:
-    float legHeight = 5.0f;
-    float legWidth  = 3.0f;
-    float bodyHeight = 10.0f;
-    float bodyWidth  = 10.0f;
-    float headRadius = 5.0f; // (head diameter = 10)
+void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO)
+{
+    // Dimensions
+    float legHeight = 5.0f, legWidth = 3.0f;
+    float bodyHeight = 10.0f, bodyWidth = 10.0f;
+    float headRadius = 5.0f;
+    
+    // Center pivot for rotation (example: center of bounding box)
+    float pivotX = player.x + bodyWidth * 0.5f;  // or player.x + PLAYER_WIDTH * 0.5f
+    float pivotY = player.y + (legHeight + bodyHeight + headRadius) * 0.5f; 
+    // Alternatively, you might want just pivot at (player.x + bodyWidth/2, player.y + legHeight + bodyHeight/2), etc.
 
-    // Lambda to draw a rectangle (two triangles)
-    auto drawRectangle = [&](float x, float y, float width, float height) {
+    auto drawRectangle = [&](float x, float y, float w, float h) {
         float vertices[] = {
-            x,         y,           0.0f, 0.0f,
-            x + width, y,           1.0f, 0.0f,
-            x + width, y + height,  1.0f, 1.0f,
-            x,         y,           0.0f, 0.0f,
-            x + width, y + height,  1.0f, 1.0f,
-            x,         y + height,  0.0f, 1.0f
+            x,      y,      0.0f, 0.0f,
+            x + w,  y,      1.0f, 0.0f,
+            x + w,  y + h,  1.0f, 1.0f,
+            x,      y,      0.0f, 0.0f,
+            x + w,  y + h,  1.0f, 1.0f,
+            x,      y + h,  0.0f, 1.0f
         };
+        // Rotate each vertex
+        for (int i = 0; i < 6; i++) {
+            float& vx = vertices[i*4 + 0];
+            float& vy = vertices[i*4 + 1];
+            rotatePoint(vx, vy, pivotX, pivotY, player.angle);
+        }
+
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glUseProgram(shaderProgram);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     };
 
-    // --- Draw Legs ---
-    // We center two legs within the 10-unit width.
-    float leftLegX = player.x + 2.0f;  // left leg: starts 2 units from player's x
-    float leftLegY = player.y;
-    drawRectangle(leftLegX, leftLegY, legWidth, legHeight);
+    //  Legs (two small rectangles)
+    drawRectangle(player.x + 2.0f, player.y, legWidth, legHeight);
+    drawRectangle(player.x + 7.0f, player.y, legWidth, legHeight);
 
-    float rightLegX = player.x + 7.0f; // right leg: (2 + 3 + 2 = 7)
-    float rightLegY = player.y;
-    drawRectangle(rightLegX, rightLegY, legWidth, legHeight);
+    // Body
+    drawRectangle(player.x, player.y + legHeight, bodyWidth, bodyHeight);
 
-    // --- Draw Body ---
-    float bodyX = player.x;
-    float bodyY = player.y + legHeight;
-    drawRectangle(bodyX, bodyY, bodyWidth, bodyHeight);
-
-    // --- Draw Head as a Circle ---
-    // We'll approximate the circle using a triangle fan.
+    // Head (circle) - we rotate each vertex in the circle
     int segments = 20;
     std::vector<float> circleVertices;
-    circleVertices.reserve((segments + 2) * 4); // each vertex: 4 floats
+    circleVertices.reserve((segments + 2) * 4);
 
-    // The center of the head is horizontally centered in the body.
-    float centerX = player.x + bodyWidth / 2.0f;
-    // Place the head so its bottom touches the top of the body.
+    float centerX = player.x + bodyWidth/2.0f;
     float centerY = player.y + legHeight + bodyHeight + headRadius;
-    
-    // Center vertex of the fan
+
+    // Center vertex
     circleVertices.push_back(centerX);
     circleVertices.push_back(centerY);
-    circleVertices.push_back(0.5f); // Arbitrary texture coordinate
     circleVertices.push_back(0.5f);
-    
-    // Generate points along the circle.
-    for (int i = 0; i <= segments; ++i) {
+    circleVertices.push_back(0.5f);
+
+    for (int i = 0; i <= segments; i++) {
         float angle = 2.0f * 3.14159f * i / segments;
         float vx = centerX + headRadius * cos(angle);
         float vy = centerY + headRadius * sin(angle);
-        // Texture coordinates for the circle (optional)
         float tx = (cos(angle) + 1.0f) * 0.5f;
         float ty = (sin(angle) + 1.0f) * 0.5f;
+
+        // Rotate each vertex before storing
+        rotatePoint(vx, vy, pivotX, pivotY, player.angle);
+
         circleVertices.push_back(vx);
         circleVertices.push_back(vy);
         circleVertices.push_back(tx);
         circleVertices.push_back(ty);
     }
+
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
     glUseProgram(shaderProgram);
@@ -446,16 +464,32 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
 
-        // Update player position using the composite collision box (PLAYER_WIDTH x PLAYER_HEIGHT)
-        float playerSpeed = PLAYER_SPEED * 0.01f;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && !checkCollision(player.x, player.y - playerSpeed, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-            player.y -= playerSpeed;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && !checkCollision(player.x, player.y + playerSpeed, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-            player.y += playerSpeed;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && !checkCollision(player.x - playerSpeed, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-            player.x -= playerSpeed;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && !checkCollision(player.x + playerSpeed, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-            player.x += playerSpeed;
+        // For the player's orientation (in the main loop):
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            // Move up
+            if (!checkCollision(player.x, player.y - PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.y -= PLAYER_SPEED;
+            player.angle = 90.0f; // Facing 'north'
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            // Move down
+            if (!checkCollision(player.x, player.y + PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.y += PLAYER_SPEED;
+            player.angle = 270.0f; // Facing 'south'
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            // Move left
+            if (!checkCollision(player.x - PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.x -= PLAYER_SPEED;
+            player.angle = 180.0f; // Facing 'west'
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            // Move right
+            if (!checkCollision(player.x + PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.x += PLAYER_SPEED;
+            player.angle = 0.0f; // Facing 'east'
+        }
+
 
         // Move ducks and foxes.
         for (Duck& duck : ducks) {
