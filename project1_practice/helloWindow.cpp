@@ -5,6 +5,24 @@
 //
 void processInput(GLFWwindow *window);
 
+float g_zoom = 1.0f;  // 1.0 => normal size
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    // If yoffset > 0, user scrolled up => zoom in
+    // If yoffset < 0, user scrolled down => zoom out
+
+    // Example: multiply by a factor
+    if (yoffset > 0)
+        g_zoom *= 1.1f; // 10% bigger
+    else
+        g_zoom *= 0.9f; // 10% smaller
+
+    // Clamp to avoid extreme zoom:
+    if (g_zoom < 0.1f)  g_zoom = 0.1f;   // don’t let it get too small
+    if (g_zoom > 10.0f) g_zoom = 10.0f;  // or too large
+}
+
 //
 // MAIN
 //
@@ -27,6 +45,9 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    // Set the mouse scroll callback
+    glfwSetScrollCallback(window, scroll_callback);
 
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -52,10 +73,21 @@ int main() {
         #version 330 core
         layout (location = 0) in vec2 aPos;
         layout (location = 1) in vec2 aTexCoord;
+
+        uniform float uZoom;  // <--- new uniform controlling zoom
+
         out vec2 TexCoord;
-        void main() {
-            // Flip the y-coordinate to match our 2D coordinate system
+
+        void main()
+        {
+            // Flip the y-coordinate
             vec2 flippedPos = vec2(aPos.x, 600.0 - aPos.y);
+
+            // Scale by the zoom factor (zoom > 1.0 => bigger, < 1.0 => smaller).
+            // If you want "zoom in" to actually make objects look bigger, you can invert it.
+            flippedPos *= uZoom;
+
+            // Same normalization from (0..800,0..600) to Clip Space
             gl_Position = vec4(flippedPos / vec2(800.0, 600.0) * 2.0 - 1.0, 0.0, 1.0);
             TexCoord = aTexCoord;
         }
@@ -98,6 +130,15 @@ int main() {
     // --- Game Loop ---
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
+
+        glUseProgram(shaderProgram);
+
+        // Get the uniform location of `uZoom` in your compiled shader
+        int zoomLoc = glGetUniformLocation(shaderProgram, "uZoom");
+        // Pass the current zoom value
+        glUniform1f(zoomLoc, g_zoom);
+
+        // Then proceed with drawing all your tiles, player, etc.
 
         // Track if player moved this frame
         bool movedThisFrame = false;
