@@ -30,7 +30,7 @@ const unsigned int TILE_SIZE = 20;
 static float legSwingAngle = 0.0f;      // Current rotation offset for the legs
 static float legSwingDirection = 1.0f;  // 1 means increasing angle, -1 means decreasing
 static bool  isWalking = false;         // Track if the player is currently moving
-
+const float LEG_SWING_SPEED = 2.0f; // Adjust this value to change the speed
 
 // For ducks and foxes, we still use a simple block of size 10:
 const float ENTITY_SIZE = 10.0f;
@@ -564,7 +564,16 @@ int main() {
             movedThisFrame = true;
         }
 
-
+        // Update leg swing angle if the player is moving
+        if (movedThisFrame) {
+            legSwingAngle += LEG_SWING_SPEED * legSwingDirection;
+            if (legSwingAngle > 30.0f || legSwingAngle < -30.0f) {
+                legSwingDirection *= -1.0f;
+            }
+        } else {
+            legSwingAngle = 0.0f; // Reset leg swing angle if not moving
+        }
+        
         // Move ducks and foxes.
         for (Duck& duck : ducks) {
             duck.move(tiles);
