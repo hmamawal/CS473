@@ -1,30 +1,4 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include "utilities/stb_image.h"
-#include "utilities/environment.hpp" // For framebuffer_size_callback
-
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <sstream>
-#include <cmath>
-#include "classes/basic_shape.hpp"
-#include "classes/vertex_attribute.hpp"
-#include "classes/Shader.hpp"
-#include "utilities/build_shapes.hpp"
-#include "utilities/constants.hpp"
-#include "classes/camera.hpp"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "classes/Player.hpp"
-#include "classes/Tile.hpp"
-#include "classes/Duck.hpp"
-#include "classes/Fox.hpp"
-#include "classes/Heart.hpp" // Include the Heart class
-#include "Game/ResourceManager.hpp"
-#include "Game/Collision.hpp"
-#include "Game/level_loader.hpp"
+#include "utilities/pch.hpp"
 
 //
 // Function declarations
