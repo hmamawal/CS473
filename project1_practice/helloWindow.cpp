@@ -26,6 +26,12 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 const unsigned int TILE_SIZE = 20;
 
+// At global scope or near the top of main.cpp:
+static float legSwingAngle = 0.0f;      // Current rotation offset for the legs
+static float legSwingDirection = 1.0f;  // 1 means increasing angle, -1 means decreasing
+static bool  isWalking = false;         // Track if the player is currently moving
+
+
 // For ducks and foxes, we still use a simple block of size 10:
 const float ENTITY_SIZE = 10.0f;
 
@@ -154,19 +160,25 @@ void rotatePoint(float& px, float& py, float cx, float cy, float angleDeg)
 // ------------------------------
 // NEW: Render the player as a composite shape
 // ------------------------------
-void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO)
+void renderPlayer(const Player& player, float swingAngle, unsigned int shaderProgram, unsigned int VAO)
 {
     // Dimensions
     float legHeight = 5.0f, legWidth = 3.0f;
     float bodyHeight = 10.0f, bodyWidth = 10.0f;
     float headRadius = 5.0f;
-    
-    // Center pivot for rotation (example: center of bounding box)
-    float pivotX = player.x + bodyWidth * 0.5f;  // or player.x + PLAYER_WIDTH * 0.5f
-    float pivotY = player.y + (legHeight + bodyHeight + headRadius) * 0.5f; 
-    // Alternatively, you might want just pivot at (player.x + bodyWidth/2, player.y + legHeight + bodyHeight/2), etc.
 
-    auto drawRectangle = [&](float x, float y, float w, float h) {
+    // Overall pivot for the player's rotation
+    float pivotX = player.x + bodyWidth * 0.5f;
+    float pivotY = player.y + (legHeight + bodyHeight + headRadius) * 0.5f;
+
+    // We'll define a helper that draws a rectangle in local coordinates,
+    // but rotates it around a given pivot for "leg swing," and THEN around
+    // the player's overall pivot for "direction facing."
+    auto drawRectangleWithLegSwing = [&](float x, float y,
+                                         float w, float h,
+                                         float legPivotX, float legPivotY,
+                                         float localAngle) // e.g. +swingAngle or -swingAngle
+    {
         float vertices[] = {
             x,      y,      0.0f, 0.0f,
             x + w,  y,      1.0f, 0.0f,
@@ -175,61 +187,117 @@ void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int
             x + w,  y + h,  1.0f, 1.0f,
             x,      y + h,  0.0f, 1.0f
         };
-        // Rotate each vertex
+
+        // Step 1) Rotate around legPivotX, legPivotY for "leg swing"
+        for (int i = 0; i < 6; i++) {
+            float& vx = vertices[i*4 + 0];
+            float& vy = vertices[i*4 + 1];
+            rotatePoint(vx, vy, legPivotX, legPivotY, localAngle);
+        }
+
+        // Step 2) Rotate around the player's overall pivot
         for (int i = 0; i < 6; i++) {
             float& vx = vertices[i*4 + 0];
             float& vy = vertices[i*4 + 1];
             rotatePoint(vx, vy, pivotX, pivotY, player.angle);
         }
 
+        // Now send to GPU
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glUseProgram(shaderProgram);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     };
 
-    //  Legs (two small rectangles)
-    drawRectangle(player.x + 2.0f, player.y, legWidth, legHeight);
-    drawRectangle(player.x + 7.0f, player.y, legWidth, legHeight);
 
-    // Body
-    drawRectangle(player.x, player.y + legHeight, bodyWidth, bodyHeight);
+    //
+    // --- DRAW LEGS ---
+    //
+    // The top of each leg is the pivot for the leg swing
+    float leftLegTopX  = player.x + 2.0f;
+    float leftLegTopY  = player.y + legHeight;    // top = bottom + legHeight
+    float rightLegTopX = player.x + 7.0f;
+    float rightLegTopY = player.y + legHeight;
 
-    // Head (circle) - we rotate each vertex in the circle
-    int segments = 20;
-    std::vector<float> circleVertices;
-    circleVertices.reserve((segments + 2) * 4);
+    // Left leg swings with +swingAngle, right leg with -swingAngle (or vice versa).
+    drawRectangleWithLegSwing(
+        player.x + 2.0f, // rect lower-left X
+        player.y,        // rect lower-left Y
+        legWidth,
+        legHeight,
+        leftLegTopX,     // pivot X
+        leftLegTopY,     // pivot Y
+        swingAngle       // local rotation for left leg
+    );
 
-    float centerX = player.x + bodyWidth/2.0f;
-    float centerY = player.y + legHeight + bodyHeight + headRadius;
+    drawRectangleWithLegSwing(
+        player.x + 7.0f,
+        player.y,
+        legWidth,
+        legHeight,
+        rightLegTopX,
+        rightLegTopY,
+        -swingAngle      // local rotation for right leg
+    );
 
-    // Center vertex
-    circleVertices.push_back(centerX);
-    circleVertices.push_back(centerY);
-    circleVertices.push_back(0.5f);
-    circleVertices.push_back(0.5f);
 
-    for (int i = 0; i <= segments; i++) {
-        float angle = 2.0f * 3.14159f * i / segments;
-        float vx = centerX + headRadius * cos(angle);
-        float vy = centerY + headRadius * sin(angle);
-        float tx = (cos(angle) + 1.0f) * 0.5f;
-        float ty = (sin(angle) + 1.0f) * 0.5f;
+    //
+    // --- DRAW BODY ---
+    //
+    // For the body, we do not have a local pivot (we don’t want it “swinging”),
+    // so localAngle = 0. But we still must rotate around the player's pivot at the end.
+    drawRectangleWithLegSwing(
+        player.x,
+        player.y + legHeight, // body just above legs
+        bodyWidth,
+        bodyHeight,
+        player.x,             // an unused pivot
+        player.y + legHeight,
+        0.0f                  // no local swing
+    );
 
-        // Rotate each vertex before storing
-        rotatePoint(vx, vy, pivotX, pivotY, player.angle);
 
-        circleVertices.push_back(vx);
-        circleVertices.push_back(vy);
-        circleVertices.push_back(tx);
-        circleVertices.push_back(ty);
+    //
+    // --- DRAW HEAD (CIRCLE) ---
+    //
+    // We’ll do what you had before, but add the final rotation around the player's pivot.
+    {
+        int segments = 20;
+        std::vector<float> circleVertices;
+        circleVertices.reserve((segments + 2) * 4);
+
+        float centerX = player.x + bodyWidth/2.0f;
+        float centerY = player.y + legHeight + bodyHeight + headRadius;
+
+        // Center vertex
+        circleVertices.push_back(centerX);
+        circleVertices.push_back(centerY);
+        circleVertices.push_back(0.5f);
+        circleVertices.push_back(0.5f);
+
+        for (int i = 0; i <= segments; i++) {
+            float angle = 2.0f * 3.14159f * i / segments;
+            float vx = centerX + headRadius * cos(angle);
+            float vy = centerY + headRadius * sin(angle);
+            float tx = (cos(angle) + 1.0f) * 0.5f;
+            float ty = (sin(angle) + 1.0f) * 0.5f;
+
+            // Rotate around the player's pivot (no local pivot for the head)
+            rotatePoint(vx, vy, pivotX, pivotY, player.angle);
+
+            circleVertices.push_back(vx);
+            circleVertices.push_back(vy);
+            circleVertices.push_back(tx);
+            circleVertices.push_back(ty);
+        }
+
+        glBindBuffer(GL_ARRAY_BUFFER, VAO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
+        glUseProgram(shaderProgram);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, VAO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
-    glUseProgram(shaderProgram);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
 }
+
 
 // Render the fox as a composite shape: four legs, a horizontal body, and a circular head.
 void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
@@ -464,30 +532,36 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
 
+        // Track if player moved this frame
+        bool movedThisFrame = false;
         // For the player's orientation (in the main loop):
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             // Move up
             if (!checkCollision(player.x, player.y - PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
                 player.y -= PLAYER_SPEED;
             player.angle = 90.0f; // Facing 'north'
+            movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
             // Move down
             if (!checkCollision(player.x, player.y + PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
                 player.y += PLAYER_SPEED;
             player.angle = 270.0f; // Facing 'south'
+            movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             // Move left
             if (!checkCollision(player.x - PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
                 player.x -= PLAYER_SPEED;
             player.angle = 180.0f; // Facing 'west'
+            movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             // Move right
             if (!checkCollision(player.x + PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
                 player.x += PLAYER_SPEED;
             player.angle = 0.0f; // Facing 'east'
+            movedThisFrame = true;
         }
 
 
@@ -540,7 +614,8 @@ int main() {
             renderTile(tile, shaderProgram, VAO, tileTexture);
         }
         // Render composite player.
-        renderPlayer(player, shaderProgram, VAO);
+        renderPlayer(player, legSwingAngle, shaderProgram, VAO);
+
         // Render ducks and foxes.
         for (const Duck& duck : ducks) {
             renderDuck(duck, shaderProgram, VAO);
