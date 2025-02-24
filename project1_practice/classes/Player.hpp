@@ -15,6 +15,9 @@ public:
     void setAngle(float angle);
     void setSpeed(float speed);
 
+    // Add this:
+    void render(float swingAngle, unsigned int shaderProgram, unsigned int VAO) const;
+
 private:
     float x, y;
     float angle;
