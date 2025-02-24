@@ -17,6 +17,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "classes/Player.hpp"
 #include "classes/Tile.hpp"
+#include "classes/Duck.hpp"
+#include "classes/Fox.hpp"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -33,7 +35,7 @@ unsigned int createShaderProgram(const std::string& vertexShader, const std::str
 unsigned int loadTexture(const char* path);
 bool checkCollision(float x, float y, const std::vector<Tile>& tiles);
 
-std::vector<Tile> loadMap(const std::string& filename, Player& player) {
+std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vector<Duck>& ducks, std::vector<Fox>& foxes) {
     std::vector<Tile> tiles;
     std::ifstream file(filename);
     std::string line;
@@ -49,6 +51,20 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player) {
             } else if (line[x] == 'P') {
                 player.x = tile.x;
                 player.y = tile.y;
+                tile.isWall = false;
+                tiles.push_back(tile);
+            } else if (line[x] == 'D') {
+                Duck duck;
+                duck.x = tile.x;
+                duck.y = tile.y;
+                ducks.push_back(duck);
+                tile.isWall = false;
+                tiles.push_back(tile);
+            } else if (line[x] == 'F') {
+                Fox fox;
+                fox.x = tile.x;
+                fox.y = tile.y;
+                foxes.push_back(fox);
                 tile.isWall = false;
                 tiles.push_back(tile);
             } else {
@@ -102,6 +118,44 @@ void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) {
+    float vertices[] = {
+        // positions        // texture coords
+        duck.x, duck.y,            0.0f, 0.0f,
+        duck.x + PLAYER_SIZE, duck.y,            1.0f, 0.0f,
+        duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
+
+        duck.x, duck.y,            0.0f, 0.0f,
+        duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
+        duck.x, duck.y + PLAYER_SIZE, 0.0f, 1.0f
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, VAO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    glUseProgram(shaderProgram);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
+    float vertices[] = {
+        // positions        // texture coords
+        fox.x, fox.y,            0.0f, 0.0f,
+        fox.x + PLAYER_SIZE, fox.y,            1.0f, 0.0f,
+        fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
+
+        fox.x, fox.y,            0.0f, 0.0f,
+        fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
+        fox.x, fox.y + PLAYER_SIZE, 0.0f, 1.0f
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, VAO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    glUseProgram(shaderProgram);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 int main() {
     // glfw: initialize and configure
     glfwInit();
@@ -131,9 +185,11 @@ int main() {
 
     // Initialize the player
     Player player = { 0.0f, 0.0f };
+    std::vector<Duck> ducks;
+    std::vector<Fox> foxes;
 
     // Load the map
-    std::vector<Tile> tiles = loadMap("level.txt", player);
+    std::vector<Tile> tiles = loadMap("level.txt", player, ducks, foxes);
 
     // Build and compile our shader program
     std::string vertexShaderSource = R"(
@@ -211,6 +267,16 @@ int main() {
 
         // Render the player
         renderPlayer(player, shaderProgram, VAO);
+
+        // Render the ducks
+        for (const Duck& duck : ducks) {
+            renderDuck(duck, shaderProgram, VAO);
+        }
+
+        // Render the foxes
+        for (const Fox& fox : foxes) {
+            renderFox(fox, shaderProgram, VAO);
+        }
 
         // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
