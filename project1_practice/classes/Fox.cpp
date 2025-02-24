@@ -6,20 +6,21 @@
 #include <cmath>
 #include "../utilities/constants.hpp"
 #include "../utilities/helper.hpp"
-#include "../utilities/constants.hpp"
 
-Fox::Fox(float x, float y, float speed, int direction)
-    : x(x), y(y), speed(speed), direction(direction) {}
+Fox::Fox(float x, float y, float speed, int direction, float angle)
+    : x(x), y(y), speed(speed), direction(direction), angle(angle) {}
 
 float Fox::getX() const { return x; }
 float Fox::getY() const { return y; }
 float Fox::getSpeed() const { return speed; }
 int Fox::getDirection() const { return direction; }
+float Fox::getAngle() const { return angle; }
 
 void Fox::setX(float x) { this->x = x; }
 void Fox::setY(float y) { this->y = y; }
 void Fox::setSpeed(float speed) { this->speed = speed; }
 void Fox::setDirection(int direction) { this->direction = direction; }
+void Fox::setAngle(float angle) { this->angle = angle; }
 
 void Fox::move(const std::vector<Tile>& tiles) {
     float newX = x + direction * speed;
@@ -32,6 +33,7 @@ void Fox::move(const std::vector<Tile>& tiles) {
                 y < tile.y + TILE_SIZE &&
                 y + ENTITY_SIZE > tile.y) {
                 direction *= -1; // Change direction
+                angle = (direction == 1) ? 0.0f : 180.0f; // Update angle based on direction
                 return;
             }
         }
@@ -93,7 +95,7 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
     // Body sits above the legs.
     float bodyX = x;
     float bodyY = y + legHeight;
-    drawRectangleWithRotation(bodyX, bodyY, bodyWidth, bodyHeight, 0.0f);
+    drawRectangleWithRotation(bodyX, bodyY, bodyWidth, bodyHeight, angle);
 
     // --- Draw Head as a Circle ---
     // Place the head on the left side of the body.
@@ -108,14 +110,14 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
     circleVertices.push_back(0.5f); // texture coordinate (arbitrary)
     circleVertices.push_back(0.5f);
     for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * 3.14159f * i / segments;
-        float vx = centerX + headRadius * cos(angle);
-        float vy = centerY + headRadius * sin(angle);
-        float tx = (cos(angle) + 1.0f) * 0.5f;
-        float ty = (sin(angle) + 1.0f) * 0.5f;
+        float angleStep = 2.0f * 3.14159f * i / segments;
+        float vx = centerX + headRadius * cos(angleStep);
+        float vy = centerY + headRadius * sin(angleStep);
+        float tx = (cos(angleStep) + 1.0f) * 0.5f;
+        float ty = (sin(angleStep) + 1.0f) * 0.5f;
 
         // Rotate around the pivot
-        rotatePoint(vx, vy, pivotX, pivotY, 0.0f);
+        rotatePoint(vx, vy, pivotX, pivotY, angle);
 
         circleVertices.push_back(vx);
         circleVertices.push_back(vy);
