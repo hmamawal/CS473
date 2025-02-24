@@ -8,38 +8,35 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
-unsigned int compileShader(unsigned int type, const std::string& source); // Returns the ID of the compiled shader
-unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader); // Returns the ID of the shader program
+unsigned int compileShader(unsigned int type, const std::string& source);
+unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-const unsigned int TILE_SIZE = 20; // The size of each tile in pixels
+const unsigned int TILE_SIZE = 20;
 
-// A struct to represent a tile in the map
 struct Tile {
     float x, y;
     bool isWall;
 };
 
-// Load the map from a file
-// Function to load the map from a file
 std::vector<Tile> loadMap(const std::string& filename) {
-    std::vector<Tile> tiles; // Vector to store the tiles
-    std::ifstream file(filename); // Open the file
-    std::string line; // String to store each line of the file
-    int y = 0; // Y-coordinate of the tile
-    while (std::getline(file, line)) { // Read the file line by line
-        for (int x = 0; x < line.size(); ++x) { // Iterate through each character in the line
-            Tile tile; // Create a new tile
-            tile.x = x * TILE_SIZE; // Set the X-coordinate of the tile
-            tile.y = y * TILE_SIZE; // Set the Y-coordinate of the tile
-            tile.isWall = (line[x] == '#'); // Determine if the tile is a wall
-            tiles.push_back(tile); // Add the tile to the vector
+    std::vector<Tile> tiles;
+    std::ifstream file(filename);
+    std::string line;
+    int y = 0;
+    while (std::getline(file, line)) {
+        for (int x = 0; x < line.size(); ++x) {
+            Tile tile;
+            tile.x = x * TILE_SIZE;
+            tile.y = y * TILE_SIZE;
+            tile.isWall = (line[x] == '#');
+            tiles.push_back(tile);
         }
-        ++y; // Move to the next row
+        ++y;
     }
-    return tiles; // Return the vector of tiles
+    return tiles;
 }
 
 void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VBO) {
@@ -97,7 +94,9 @@ int main() {
         #version 330 core
         layout (location = 0) in vec2 aPos;
         void main() {
-            gl_Position = vec4(aPos / vec2(800.0, 600.0) * 2.0 - 1.0, 0.0, 1.0);
+            // Flip the y-coordinate
+            vec2 flippedPos = vec2(aPos.x, 600.0 - aPos.y);
+            gl_Position = vec4(flippedPos / vec2(800.0, 600.0) * 2.0 - 1.0, 0.0, 1.0);
         }
     )";
 
