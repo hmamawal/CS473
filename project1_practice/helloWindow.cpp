@@ -15,6 +15,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "classes/Player.hpp"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -26,10 +27,6 @@ const float PLAYER_SPEED = 10.0f;
 struct Tile {
     float x, y;
     bool isWall;
-};
-
-struct Player {
-    float x, y;
 };
 
 void processInput(GLFWwindow *window);
