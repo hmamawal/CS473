@@ -1,15 +1,25 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "utilities/stb_image.h"
+#include "utilities/environment.hpp" // Include the header for framebuffer_size_callback
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include "classes/basic_shape.hpp"
+#include "classes/vertex_attribute.hpp"
+#include "classes/Shader.hpp"
+#include "utilities/build_shapes.hpp"
+#include "classes/camera.hpp"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
 unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
+unsigned int loadTexture(const char* path);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -39,22 +49,24 @@ std::vector<Tile> loadMap(const std::string& filename) {
     return tiles;
 }
 
-void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VBO) {
+void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) {
     if (tile.isWall) {
         float vertices[] = {
-            tile.x, tile.y,
-            tile.x + TILE_SIZE, tile.y,
-            tile.x + TILE_SIZE, tile.y + TILE_SIZE,
+            // positions        // texture coords
+            tile.x, tile.y,            0.0f, 0.0f,
+            tile.x + TILE_SIZE, tile.y,            1.0f, 0.0f,
+            tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
 
-            tile.x, tile.y,
-            tile.x + TILE_SIZE, tile.y + TILE_SIZE,
-            tile.x, tile.y + TILE_SIZE
+            tile.x, tile.y,            0.0f, 0.0f,
+            tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
+            tile.x, tile.y + TILE_SIZE, 0.0f, 1.0f
         };
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
         glUseProgram(shaderProgram);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }
@@ -93,22 +105,35 @@ int main() {
     std::string vertexShaderSource = R"(
         #version 330 core
         layout (location = 0) in vec2 aPos;
+        layout (location = 1) in vec2 aTexCoord;
+
+        out vec2 TexCoord;
+
         void main() {
             // Flip the y-coordinate
             vec2 flippedPos = vec2(aPos.x, 600.0 - aPos.y);
             gl_Position = vec4(flippedPos / vec2(800.0, 600.0) * 2.0 - 1.0, 0.0, 1.0);
+            TexCoord = aTexCoord;
         }
     )";
 
     std::string fragmentShaderSource = R"(
         #version 330 core
         out vec4 FragColor;
+
+        in vec2 TexCoord;
+
+        uniform sampler2D texture1;
+
         void main() {
-            FragColor = vec4(0.0, 1.0, 0.0, 1.0); // Green color for walls
+            FragColor = texture(texture1, TexCoord);
         }
     )";
 
     unsigned int shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+    // Load texture
+    unsigned int texture = loadTexture("images/minecraft_tree.png");
 
     // Set up vertex data (and buffer(s)) and configure vertex attributes
     unsigned int VBO, VAO;
@@ -118,10 +143,12 @@ int main() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 24, NULL, GL_DYNAMIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -134,7 +161,7 @@ int main() {
 
         // Render the tiles
         for (const Tile& tile : tiles) {
-            renderTile(tile, shaderProgram, VBO);
+            renderTile(tile, shaderProgram, VBO, texture);
         }
 
         // glfw: swap buffers and poll IO events
@@ -150,10 +177,6 @@ int main() {
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
 }
 
 unsigned int compileShader(unsigned int type, const std::string& source) {
@@ -192,4 +215,37 @@ unsigned int createShaderProgram(const std::string& vertexShader, const std::str
     glDeleteShader(fs);
 
     return program;
+}
+
+unsigned int loadTexture(const char* path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data) {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    } else {
+        std::cout << "Failed to load texture" << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
