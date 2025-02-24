@@ -22,6 +22,7 @@
 #include "classes/Duck.hpp"
 #include "classes/Fox.hpp"
 #include "Game/ResourceManager.hpp"
+#include "Game/Collision.hpp"
 
 //
 // Function declarations
@@ -30,8 +31,7 @@ void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
 unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
 unsigned int loadTexture(const char* path);
-// Updated collision function takes width and height (for the composite player)
-bool checkCollision(float x, float y, float width, float height, const std::vector<Tile>& tiles);
+
 
 // Load the map from a text file. (For simplicity, only walls and entities are processed.)
 std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vector<Duck>& ducks, std::vector<Fox>& foxes) {
@@ -631,18 +631,3 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
 }
 
-
-// Updated collision function uses a passed-in width and height.
-bool checkCollision(float x, float y, float width, float height, const std::vector<Tile>& tiles) {
-    for (const Tile& tile : tiles) {
-        if (tile.isWall) {
-            if (x < tile.x + TILE_SIZE &&
-                x + width > tile.x &&
-                y < tile.y + TILE_SIZE &&
-                y + height > tile.y) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
