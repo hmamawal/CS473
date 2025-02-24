@@ -27,7 +27,7 @@ void Player::setSpeed(float sp)  { this->speed = sp; }
 // ------------------------------------------------------------------
 // NEW: The player’s own render method
 // ------------------------------------------------------------------
-void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int VAO) const
+void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const
 {
     // Adjusted dimensions to fit in smaller spaces
     float legHeight = 3.0f, legWidth = 2.0f;
@@ -149,7 +149,7 @@ void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int V
             circleVertices.push_back(tx);
             circleVertices.push_back(ty);
         }
-
+        glBindTexture(GL_TEXTURE_2D, texture);
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
         glUseProgram(shaderProgram);

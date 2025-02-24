@@ -16,7 +16,7 @@ public:
     void setSpeed(float speed);
 
     // Add this:
-    void render(float swingAngle, unsigned int shaderProgram, unsigned int VAO) const;
+    void render(float swingAngle, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const;
 
 private:
     float x, y;

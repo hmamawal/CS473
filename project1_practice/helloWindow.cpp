@@ -72,9 +72,13 @@ int main() {
 
     ResourceManager resourceManager;
     unsigned int shaderProgram  = resourceManager.CreateShaderProgram(vertexShaderSource, fragmentShaderSource);
+    
+    // Load textures
     unsigned int tileTexture    = ResourceManager::loadTexture("images/minecraft_tree.png");
     unsigned int heartTexture   = ResourceManager::loadTexture("images/heart_full.png");
     unsigned int heartEmptyTex  = ResourceManager::loadTexture("images/heart_empty.png");
+    unsigned int playerTexture  = ResourceManager::loadTexture("images/player.png");
+
     
 
     // Set up vertex data (and buffer(s)) and configure vertex attributes.
@@ -190,7 +194,7 @@ int main() {
             tile.render(shaderProgram, VAO, tileTexture);
         }
         // Render composite player.
-        player.render(legSwingAngle, shaderProgram, VAO);
+        player.render(legSwingAngle, shaderProgram, VAO, playerTexture);
 
         // Render ducks and foxes.
         for (const Duck& duck : ducks) {
