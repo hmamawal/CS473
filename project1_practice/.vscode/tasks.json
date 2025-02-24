@@ -15,6 +15,7 @@
                     "${workspaceFolder}\\classes\\Player.cpp", 
                     "${workspaceFolder}\\classes\\Duck.cpp",  
                     "${workspaceFolder}\\classes\\Tile.cpp",  
+                    "${workspaceFolder}\\classes\\Heart.cpp", 
                     "${workspaceFolder}\\utilities\\environment.cpp", 
                     "${workspaceFolder}\\utilities\\build_shapes.cpp",
                     "${workspaceFolder}\\utilities\\helper.cpp",

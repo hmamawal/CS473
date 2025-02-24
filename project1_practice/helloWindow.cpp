@@ -21,6 +21,7 @@
 #include "classes/Tile.hpp"
 #include "classes/Duck.hpp"
 #include "classes/Fox.hpp"
+#include "classes/Heart.hpp" // Include the Heart class
 #include "Game/ResourceManager.hpp"
 #include "Game/Collision.hpp"
 #include "Game/level_loader.hpp"
@@ -29,31 +30,6 @@
 // Function declarations
 //
 void processInput(GLFWwindow *window);
-
-// Render hearts (unchanged from before)
-void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int fullTexture, unsigned int emptyTexture, int currentHearts, int maxHearts) {
-    float heartSize = 20.0f;
-    for (int i = 0; i < maxHearts; ++i) {
-        float x = SCR_WIDTH - (i + 1) * (heartSize + 10.0f);
-        float y = SCR_HEIGHT - heartSize - 10.0f;
-        unsigned int textureToUse = (i < currentHearts) ? fullTexture : emptyTexture;
-        float vertices[] = {
-            x, y,                      0.0f, 0.0f,
-            x + heartSize, y,          1.0f, 0.0f,
-            x + heartSize, y + heartSize, 1.0f, 1.0f,
-            x, y,                      0.0f, 0.0f,
-            x + heartSize, y + heartSize, 1.0f, 1.0f,
-            x, y + heartSize,          0.0f, 1.0f
-        };
-        glBindBuffer(GL_ARRAY_BUFFER, VAO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glUseProgram(shaderProgram);
-        glBindTexture(GL_TEXTURE_2D, textureToUse);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
-}
-
-
 
 //
 // MAIN
@@ -90,6 +66,12 @@ int main() {
     std::vector<Duck> ducks;
     std::vector<Fox> foxes;
     std::vector<Tile> tiles = loadMap("level.txt", player, ducks, foxes);
+
+    // Initialize hearts
+    std::vector<Heart> hearts;
+    for (int i = 0; i < MAX_HEARTS; ++i) {
+        hearts.emplace_back(SCR_WIDTH - (i + 1) * 30.0f, SCR_HEIGHT - 30.0f, true);
+    }
 
     // Build and compile our shader program.
     std::string vertexShaderSource = R"(
@@ -220,6 +202,11 @@ int main() {
             }
         }
 
+        // Update hearts based on playerHearts
+        for (int i = 0; i < MAX_HEARTS; ++i) {
+            hearts[i].setFull(i < playerHearts);
+        }
+
         // Render scene.
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -239,7 +226,9 @@ int main() {
             fox.render(shaderProgram, VAO);
         }
         // Render hearts.
-        renderHearts(shaderProgram, VAO, heartTexture, heartEmptyTex, playerHearts, MAX_HEARTS);
+        for (const Heart& heart : hearts) {
+            heart.render(shaderProgram, VAO, heartTexture, heartEmptyTex);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
