@@ -29,6 +29,8 @@ const float PLAYER_SPEED = 10.0f;
 
 // Maximum hearts the player can have.
 const int MAX_HEARTS = 3;
+// Number of empty tiles (read in order from the map) designated as the exit region.
+const int EXIT_TILE_COUNT = 27;
 
 void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
@@ -36,39 +38,66 @@ unsigned int createShaderProgram(const std::string& vertexShader, const std::str
 unsigned int loadTexture(const char* path);
 bool checkCollision(float x, float y, const std::vector<Tile>& tiles);
 
-std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vector<Duck>& ducks, std::vector<Fox>& foxes) {
+// Modified loadMap now also records the map width and collects empty tiles from '.' characters as exit candidates.
+std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vector<Duck>& ducks, std::vector<Fox>& foxes, int& mapWidth, std::vector<Tile>& exitCandidates) {
     std::vector<Tile> tiles;
     std::ifstream file(filename);
     std::string line;
     int y = 0;
     while (std::getline(file, line)) {
+        if (y == 0) {
+            mapWidth = line.size();
+        }
         for (int x = 0; x < line.size(); ++x) {
-            Tile tile;
-            tile.x = x * TILE_SIZE;
-            tile.y = y * TILE_SIZE;
-            if (line[x] == '#') {
+            char ch = line[x];
+            if (ch == '#') {
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
                 tile.isWall = true;
                 tiles.push_back(tile);
-            } else if (line[x] == 'P') {
-                player.x = tile.x;
-                player.y = tile.y;
+            } else if (ch == 'P') {
+                // Set player's starting position.
+                player.x = x * TILE_SIZE;
+                player.y = y * TILE_SIZE;
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
                 tile.isWall = false;
                 tiles.push_back(tile);
-            } else if (line[x] == 'D') {
+            } else if (ch == 'D') {
                 Duck duck;
-                duck.x = tile.x;
-                duck.y = tile.y;
+                duck.x = x * TILE_SIZE;
+                duck.y = y * TILE_SIZE;
                 ducks.push_back(duck);
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
                 tile.isWall = false;
                 tiles.push_back(tile);
-            } else if (line[x] == 'F') {
+            } else if (ch == 'F') {
                 Fox fox;
-                fox.x = tile.x;
-                fox.y = tile.y;
+                fox.x = x * TILE_SIZE;
+                fox.y = y * TILE_SIZE;
                 foxes.push_back(fox);
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
                 tile.isWall = false;
+                tiles.push_back(tile);
+            } else if (ch == '.') {
+                // This empty tile is a candidate for the exit region.
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
+                tile.isWall = false;
+                exitCandidates.push_back(tile);
                 tiles.push_back(tile);
             } else {
+                // Any other character is treated as an empty space.
+                Tile tile;
+                tile.x = x * TILE_SIZE;
+                tile.y = y * TILE_SIZE;
                 tile.isWall = false;
                 tiles.push_back(tile);
             }
@@ -78,30 +107,24 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vect
     return tiles;
 }
 
-// Modified renderHearts: now takes both a full and empty heart texture along with current heart count.
+// Modified renderHearts: draws a full or empty heart depending on the current heart count.
 void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int fullTexture, unsigned int emptyTexture, int currentHearts, int maxHearts) {
     float heartSize = 20.0f;
     for (int i = 0; i < maxHearts; ++i) {
         float x = SCR_WIDTH - (i + 1) * (heartSize + 10.0f);
         float y = SCR_HEIGHT - heartSize - 10.0f;
-
-        // Use full heart if within the current heart count, otherwise use empty heart.
         unsigned int textureToUse = (i < currentHearts) ? fullTexture : emptyTexture;
-
         float vertices[] = {
             // positions        // texture coords
             x, y,                      0.0f, 0.0f,
             x + heartSize, y,          1.0f, 0.0f,
             x + heartSize, y + heartSize, 1.0f, 1.0f,
-
             x, y,                      0.0f, 0.0f,
             x + heartSize, y + heartSize, 1.0f, 1.0f,
             x, y + heartSize,          0.0f, 1.0f
         };
-
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
         glUseProgram(shaderProgram);
         glBindTexture(GL_TEXTURE_2D, textureToUse);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -111,19 +134,15 @@ void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int ful
 void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) {
     if (tile.isWall) {
         float vertices[] = {
-            // positions        // texture coords
             tile.x, tile.y,                     0.0f, 0.0f,
             tile.x + TILE_SIZE, tile.y,         1.0f, 0.0f,
             tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
-
             tile.x, tile.y,                     0.0f, 0.0f,
             tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
             tile.x, tile.y + TILE_SIZE,         0.0f, 1.0f
         };
-
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
         glUseProgram(shaderProgram);
         glBindTexture(GL_TEXTURE_2D, texture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -132,57 +151,45 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
 
 void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
-        // positions        // texture coords
         player.x, player.y,                     0.0f, 0.0f,
         player.x + PLAYER_SIZE, player.y,       1.0f, 0.0f,
         player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
-
         player.x, player.y,                     0.0f, 0.0f,
         player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
         player.x, player.y + PLAYER_SIZE,       0.0f, 1.0f
     };
-
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
     glUseProgram(shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
-        // positions        // texture coords
         duck.x, duck.y,                     0.0f, 0.0f,
         duck.x + PLAYER_SIZE, duck.y,       1.0f, 0.0f,
         duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
-
         duck.x, duck.y,                     0.0f, 0.0f,
         duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
         duck.x, duck.y + PLAYER_SIZE,       0.0f, 1.0f
     };
-
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
     glUseProgram(shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
-        // positions        // texture coords
         fox.x, fox.y,                     0.0f, 0.0f,
         fox.x + PLAYER_SIZE, fox.y,       1.0f, 0.0f,
         fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
-
         fox.x, fox.y,                     0.0f, 0.0f,
         fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
         fox.x, fox.y + PLAYER_SIZE,       0.0f, 1.0f
     };
-
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
     glUseProgram(shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -193,7 +200,6 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
@@ -214,23 +220,35 @@ int main() {
         return -1;
     }
 
-    // Initialize the player and heart count
+    // Initialize the player and heart count.
     Player player = { 0.0f, 0.0f };
     int playerHearts = MAX_HEARTS;
     std::vector<Duck> ducks;
     std::vector<Fox> foxes;
+    int mapWidth = 0;
+    std::vector<Tile> exitCandidates;
 
-    // Load the map
-    std::vector<Tile> tiles = loadMap("level.txt", player, ducks, foxes);
+    // Load the map. (The player's starting position is set here.)
+    std::vector<Tile> tiles = loadMap("level.txt", player, ducks, foxes, mapWidth, exitCandidates);
 
-    // Build and compile our shader program
+    // Determine the exit region based on the order in which empty ('.') tiles were read.
+    // If the player started on the left (i.e. x-coordinate less than half the map width in pixels),
+    // then the exit consists of the last EXIT_TILE_COUNT empty tiles;
+    // otherwise, it is the first EXIT_TILE_COUNT.
+    std::vector<Tile> exitTiles;
+    int count = std::min((int)exitCandidates.size(), EXIT_TILE_COUNT);
+    if (player.x < (mapWidth * TILE_SIZE) / 2) {
+        exitTiles.insert(exitTiles.end(), exitCandidates.end() - count, exitCandidates.end());
+    } else {
+        exitTiles.insert(exitTiles.end(), exitCandidates.begin(), exitCandidates.begin() + count);
+    }
+
+    // Build and compile our shader program.
     std::string vertexShaderSource = R"(
         #version 330 core
         layout (location = 0) in vec2 aPos;
         layout (location = 1) in vec2 aTexCoord;
-
         out vec2 TexCoord;
-
         void main() {
             // Flip the y-coordinate
             vec2 flippedPos = vec2(aPos.x, 600.0 - aPos.y);
@@ -238,48 +256,39 @@ int main() {
             TexCoord = aTexCoord;
         }
     )";
-
     std::string fragmentShaderSource = R"(
         #version 330 core
         out vec4 FragColor;
-
         in vec2 TexCoord;
-
         uniform sampler2D texture1;
-
         void main() {
             FragColor = texture(texture1, TexCoord);
         }
     )";
-
     unsigned int shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
 
-    // Load textures
+    // Load textures.
     unsigned int tileTexture = loadTexture("images/minecraft_tree.png");
     unsigned int heartTexture = loadTexture("images/heart_full.png");
     unsigned int heartEmptyTexture = loadTexture("images/heart_empty.png");
 
-    // Set up vertex data (and buffer(s)) and configure vertex attributes
+    // Set up vertex data and configure vertex attributes.
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-
     glBindVertexArray(VAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 24, NULL, GL_DYNAMIC_DRAW);
-
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // render loop
+    // Game loop.
     while (!glfwWindowShouldClose(window)) {
-        // input
         processInput(window);
 
-        // Update player position
+        // Update player position.
         float playerSpeed = PLAYER_SPEED * 0.01f;
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && !checkCollision(player.x, player.y - playerSpeed, tiles))
             player.y -= playerSpeed;
@@ -290,7 +299,7 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && !checkCollision(player.x + playerSpeed, player.y, tiles))
             player.x += playerSpeed;
 
-        // Move ducks and foxes
+        // Move ducks and foxes.
         for (Duck& duck : ducks) {
             duck.move(tiles);
         }
@@ -298,7 +307,7 @@ int main() {
             fox.move(tiles);
         }
 
-        // Check collision with foxes: lose a heart and remove the fox upon collision.
+        // Collision with foxes: lose a heart and remove the fox.
         for (auto it = foxes.begin(); it != foxes.end(); ) {
             if (player.x < it->x + PLAYER_SIZE &&
                 player.x + PLAYER_SIZE > it->x &&
@@ -307,6 +316,7 @@ int main() {
                 playerHearts--;
                 it = foxes.erase(it);
                 if (playerHearts <= 0) {
+                    std::cout << "Game Over! You lost all your hearts." << std::endl;
                     glfwSetWindowShouldClose(window, true);
                     break;
                 }
@@ -315,7 +325,7 @@ int main() {
             }
         }
 
-        // Check collision with ducks: gain a heart (up to MAX_HEARTS) and remove the duck.
+        // Collision with ducks: gain a heart (up to MAX_HEARTS) and remove the duck.
         for (auto it = ducks.begin(); it != ducks.end(); ) {
             if (player.x < it->x + PLAYER_SIZE &&
                 player.x + PLAYER_SIZE > it->x &&
@@ -329,37 +339,35 @@ int main() {
             }
         }
 
-        // render
+        // Check win condition: if the player touches any exit tile.
+        for (const Tile& exitTile : exitTiles) {
+            if (player.x < exitTile.x + TILE_SIZE &&
+                player.x + PLAYER_SIZE > exitTile.x &&
+                player.y < exitTile.y + TILE_SIZE &&
+                player.y + PLAYER_SIZE > exitTile.y) {
+                std::cout << "You win! You reached the exit." << std::endl;
+                glfwSetWindowShouldClose(window, true);
+            }
+        }
+
+        // Render.
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // Render the tiles
         for (const Tile& tile : tiles) {
             renderTile(tile, shaderProgram, VAO, tileTexture);
         }
-
-        // Render the player
         renderPlayer(player, shaderProgram, VAO);
-
-        // Render the ducks
         for (const Duck& duck : ducks) {
             renderDuck(duck, shaderProgram, VAO);
         }
-
-        // Render the foxes
         for (const Fox& fox : foxes) {
             renderFox(fox, shaderProgram, VAO);
         }
-
-        // Render the hearts (full vs empty based on playerHearts)
         renderHearts(shaderProgram, VAO, heartTexture, heartEmptyTexture, playerHearts, MAX_HEARTS);
-
-        // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
     glfwTerminate();
     return 0;
 }
@@ -374,7 +382,6 @@ unsigned int compileShader(unsigned int type, const std::string& source) {
     const char* src = source.c_str();
     glShaderSource(id, 1, &src, nullptr);
     glCompileShader(id);
-
     int result;
     glGetShaderiv(id, GL_COMPILE_STATUS, &result);
     if (result == GL_FALSE) {
@@ -382,12 +389,12 @@ unsigned int compileShader(unsigned int type, const std::string& source) {
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         char* message = (char*)alloca(length * sizeof(char));
         glGetShaderInfoLog(id, length, &length, message);
-        std::cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
+        std::cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment")
+                  << " shader!" << std::endl;
         std::cout << message << std::endl;
         glDeleteShader(id);
         return 0;
     }
-
     return id;
 }
 
@@ -395,22 +402,18 @@ unsigned int createShaderProgram(const std::string& vertexShader, const std::str
     unsigned int program = glCreateProgram();
     unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
     unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
-
     glAttachShader(program, vs);
     glAttachShader(program, fs);
     glLinkProgram(program);
     glValidateProgram(program);
-
     glDeleteShader(vs);
     glDeleteShader(fs);
-
     return program;
 }
 
 unsigned int loadTexture(const char* path) {
     unsigned int textureID;
     glGenTextures(1, &textureID);
-
     int width, height, nrComponents;
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data) {
@@ -421,22 +424,18 @@ unsigned int loadTexture(const char* path) {
             format = GL_RGB;
         else if (nrComponents == 4)
             format = GL_RGBA;
-
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
         stbi_image_free(data);
     } else {
         std::cout << "Failed to load texture" << std::endl;
         stbi_image_free(data);
     }
-
     return textureID;
 }
 
