@@ -5,12 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <cmath>
-
-// If you had any shared constants like TILE_SIZE or so, be sure to include them:
 #include "../utilities/constants.hpp"
 #include "../utilities/helper.hpp"
 
-// Existing constructor & getters/setters
 Player::Player(float x, float y, float angle, float speed)
     : x(x), y(y), angle(angle), speed(speed) {}
 
@@ -19,14 +16,11 @@ float Player::getY() const { return y; }
 float Player::getAngle() const { return angle; }
 float Player::getSpeed() const { return speed; }
 
-void Player::setX(float x)       { this->x = x; }
-void Player::setY(float y)       { this->y = y; }
-void Player::setAngle(float a)   { this->angle = a; }
-void Player::setSpeed(float sp)  { this->speed = sp; }
+void Player::setX(float x) { this->x = x; }
+void Player::setY(float y) { this->y = y; }
+void Player::setAngle(float angle) { this->angle = angle; }
+void Player::setSpeed(float speed) { this->speed = speed; }
 
-// ------------------------------------------------------------------
-// NEW: The player’s own render method
-// ------------------------------------------------------------------
 void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const
 {
     // Adjusted dimensions to fit in smaller spaces
@@ -72,6 +66,7 @@ void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int V
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glUseProgram(shaderProgram);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     };
 
@@ -149,6 +144,7 @@ void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int V
             circleVertices.push_back(tx);
             circleVertices.push_back(ty);
         }
+
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());

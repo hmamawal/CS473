@@ -78,7 +78,8 @@ int main() {
     unsigned int heartTexture   = ResourceManager::loadTexture("images/heart_full.png");
     unsigned int heartEmptyTex  = ResourceManager::loadTexture("images/heart_empty.png");
     unsigned int playerTexture  = ResourceManager::loadTexture("images/player.png");
-
+    unsigned int duckTexture    = ResourceManager::loadTexture("images/duck.png");
+    unsigned int foxTexture     = ResourceManager::loadTexture("images/fox.png");
     
 
     // Set up vertex data (and buffer(s)) and configure vertex attributes.
@@ -198,10 +199,10 @@ int main() {
 
         // Render ducks and foxes.
         for (const Duck& duck : ducks) {
-            duck.render(shaderProgram, VAO);
+            duck.render(shaderProgram, VAO, duckTexture);
         }
         for (const Fox& fox : foxes) {
-            fox.render(shaderProgram, VAO);
+            fox.render(shaderProgram, VAO, foxTexture);
         }
         // Render hearts.
         for (const Heart& heart : hearts) {

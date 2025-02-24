@@ -34,7 +34,7 @@ void Duck::setX(float x) { this->x = x; }
 void Duck::setY(float y) { this->y = y; }
 
 // Render the duck as a composite shape: a circular body, a circular head, and two triangular wings.
-void Duck::render(unsigned int shaderProgram, unsigned int VAO) const {
+void Duck::render(unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const {
     // Duck dimensions:
     float bodyRadius = 5.0f; // Body circle (diameter = 10)
     float headRadius = 3.0f; // Head circle
@@ -64,6 +64,7 @@ void Duck::render(unsigned int shaderProgram, unsigned int VAO) const {
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, bodyVertices.size() * sizeof(float), bodyVertices.data());
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
 
     // --- Draw Head as a Circle ---
@@ -90,6 +91,7 @@ void Duck::render(unsigned int shaderProgram, unsigned int VAO) const {
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, headVertices.size() * sizeof(float), headVertices.data());
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
 
     // --- Draw Wings as Triangles ---
@@ -102,6 +104,7 @@ void Duck::render(unsigned int shaderProgram, unsigned int VAO) const {
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(topWingVertices), topWingVertices);
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // Define a bottom wing
@@ -113,5 +116,6 @@ void Duck::render(unsigned int shaderProgram, unsigned int VAO) const {
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bottomWingVertices), bottomWingVertices);
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }

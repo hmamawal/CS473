@@ -10,7 +10,7 @@ public:
     void move(const std::vector<Tile>& tiles);
 
     // Render the duck as a composite shape: a circular body, a circular head, and two triangular wings.
-    void render(unsigned int shaderProgram, unsigned int VAO) const;
+    void render(unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const;
 
     float getX() const;
     float getY() const;

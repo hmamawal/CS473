@@ -21,7 +21,7 @@ public:
     void setAngle(float angle);
 
     void move(const std::vector<Tile>& tiles);
-    void render(unsigned int shaderProgram, unsigned int VAO) const;
+    void render(unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const;
 
 private:
     float x, y;

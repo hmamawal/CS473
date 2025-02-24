@@ -48,7 +48,7 @@ void Fox::move(const std::vector<Tile>& tiles) {
     }
 }
 
-void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
+void Fox::render(unsigned int shaderProgram, unsigned int VAO, unsigned int texture) const {
     // Fox dimensions:
     float legWidth = 3.0f;
     float legHeight = 3.0f;
@@ -81,33 +81,31 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glUseProgram(shaderProgram);
+        glBindTexture(GL_TEXTURE_2D, texture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     };
 
-    // --- Draw 4 Legs ---
-    // We choose leg positions relative to fox.x (bottom left of the fox composite shape).
+    // --- Draw Legs ---
     drawRectangleWithRotation(x + 1,        y, legWidth, legHeight, legSwingAngle);
     drawRectangleWithRotation(x + 7,        y, legWidth, legHeight, -legSwingAngle);
     drawRectangleWithRotation(x + 13,       y, legWidth, legHeight, legSwingAngle);
     drawRectangleWithRotation(x + 19,       y, legWidth, legHeight, -legSwingAngle);
 
     // --- Draw Body ---
-    // Body sits above the legs.
     float bodyX = x;
     float bodyY = y + legHeight;
     drawRectangleWithRotation(bodyX, bodyY, bodyWidth, bodyHeight, angle);
 
     // --- Draw Head as a Circle ---
-    // Place the head on the left side of the body.
     int segments = 20;
     std::vector<float> circleVertices;
-    circleVertices.reserve((segments + 2) * 4); // each vertex: 4 floats
-    // Head center: to the left of the body, vertically centered on the body.
+    circleVertices.reserve((segments + 2) * 4);
+
     float centerX = bodyX - headRadius;
     float centerY = bodyY + bodyHeight / 2.0f;
     circleVertices.push_back(centerX);
     circleVertices.push_back(centerY);
-    circleVertices.push_back(0.5f); // texture coordinate (arbitrary)
+    circleVertices.push_back(0.5f);
     circleVertices.push_back(0.5f);
     for (int i = 0; i <= segments; ++i) {
         float angleStep = 2.0f * 3.14159f * i / segments;
@@ -115,10 +113,6 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
         float vy = centerY + headRadius * sin(angleStep);
         float tx = (cos(angleStep) + 1.0f) * 0.5f;
         float ty = (sin(angleStep) + 1.0f) * 0.5f;
-
-        // Rotate around the pivot
-        rotatePoint(vx, vy, pivotX, pivotY, angle);
-
         circleVertices.push_back(vx);
         circleVertices.push_back(vy);
         circleVertices.push_back(tx);
@@ -127,5 +121,6 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
     glUseProgram(shaderProgram);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
 }
