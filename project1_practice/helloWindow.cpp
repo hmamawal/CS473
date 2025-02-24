@@ -16,20 +16,27 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-void processInput(GLFWwindow *window);
-unsigned int compileShader(unsigned int type, const std::string& source);
-unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
-unsigned int loadTexture(const char* path);
-
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 const unsigned int TILE_SIZE = 20;
+const float PLAYER_SIZE = 20.0f;
+const float PLAYER_SPEED = 100.0f;
 
 struct Tile {
     float x, y;
     bool isWall;
 };
+
+struct Player {
+    float x, y;
+};
+
+void processInput(GLFWwindow *window);
+unsigned int compileShader(unsigned int type, const std::string& source);
+unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
+unsigned int loadTexture(const char* path);
+bool checkCollision(float x, float y, const std::vector<Tile>& tiles);
 
 std::vector<Tile> loadMap(const std::string& filename) {
     std::vector<Tile> tiles;
@@ -71,6 +78,25 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
     }
 }
 
+void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO) {
+    float vertices[] = {
+        // positions        // texture coords
+        player.x, player.y,            0.0f, 0.0f,
+        player.x + PLAYER_SIZE, player.y,            1.0f, 0.0f,
+        player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
+
+        player.x, player.y,            0.0f, 0.0f,
+        player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
+        player.x, player.y + PLAYER_SIZE, 0.0f, 1.0f
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, VAO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    glUseProgram(shaderProgram);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 int main() {
     // glfw: initialize and configure
     glfwInit();
@@ -100,6 +126,9 @@ int main() {
 
     // Load the map
     std::vector<Tile> tiles = loadMap("level.txt");
+
+    // Initialize the player
+    Player player = { 100.0f, 100.0f };
 
     // Build and compile our shader program
     std::string vertexShaderSource = R"(
@@ -155,14 +184,28 @@ int main() {
         // input
         processInput(window);
 
+        // Update player position
+        float playerSpeed = PLAYER_SPEED * 0.01f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && !checkCollision(player.x, player.y - playerSpeed, tiles))
+            player.y -= playerSpeed;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && !checkCollision(player.x, player.y + playerSpeed, tiles))
+            player.y += playerSpeed;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && !checkCollision(player.x - playerSpeed, player.y, tiles))
+            player.x -= playerSpeed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && !checkCollision(player.x + playerSpeed, player.y, tiles))
+            player.x += playerSpeed;
+
         // render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Render the tiles
         for (const Tile& tile : tiles) {
-            renderTile(tile, shaderProgram, VBO, texture);
+            renderTile(tile, shaderProgram, VAO, texture);
         }
+
+        // Render the player
+        renderPlayer(player, shaderProgram, VAO);
 
         // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
@@ -248,4 +291,18 @@ unsigned int loadTexture(const char* path) {
     }
 
     return textureID;
+}
+
+bool checkCollision(float x, float y, const std::vector<Tile>& tiles) {
+    for (const Tile& tile : tiles) {
+        if (tile.isWall) {
+            if (x < tile.x + TILE_SIZE &&
+                x + PLAYER_SIZE > tile.x &&
+                y < tile.y + TILE_SIZE &&
+                y + PLAYER_SIZE > tile.y) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
