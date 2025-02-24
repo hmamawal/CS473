@@ -4,9 +4,9 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <cmath>
-
-const unsigned int TILE_SIZE3 = 20;
-const float PLAYER_SIZE3 = 10.0f;
+#include "../utilities/constants.hpp"
+#include "../utilities/helper.hpp"
+#include "../utilities/constants.hpp"
 
 Fox::Fox(float x, float y, float speed, int direction)
     : x(x), y(y), speed(speed), direction(direction) {}
@@ -27,10 +27,10 @@ void Fox::move(const std::vector<Tile>& tiles) {
     // Check for collision with walls
     for (const Tile& tile : tiles) {
         if (tile.isWall) {
-            if (newX < tile.x + TILE_SIZE3 &&
-                newX + PLAYER_SIZE3 > tile.x &&
-                y < tile.y + TILE_SIZE3 &&
-                y + PLAYER_SIZE3 > tile.y) {
+            if (newX < tile.x + TILE_SIZE &&
+                newX + ENTITY_SIZE > tile.x &&
+                y < tile.y + TILE_SIZE &&
+                y + ENTITY_SIZE > tile.y) {
                 direction *= -1; // Change direction
                 return;
             }
@@ -38,6 +38,12 @@ void Fox::move(const std::vector<Tile>& tiles) {
     }
 
     x = newX; // Update position if no collision
+
+    // Update leg swing angle if the fox is moving
+    legSwingAngle += LEG_SWING_SPEED * legSwingDirection;
+    if (legSwingAngle > 30.0f || legSwingAngle < -30.0f) {
+        legSwingDirection *= -1.0f;
+    }
 }
 
 void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
@@ -48,8 +54,12 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
     float bodyHeight = 8.0f;
     float headRadius = 4.0f;
 
-    // Lambda to draw a rectangle (two triangles)
-    auto drawRectangle = [&](float x, float y, float width, float height) {
+    // Overall pivot for the fox's rotation
+    float pivotX = this->x + bodyWidth * 0.5f;
+    float pivotY = this->y + (legHeight + bodyHeight + headRadius) * 0.5f;
+
+    // Lambda to draw a rectangle with rotation
+    auto drawRectangleWithRotation = [&](float x, float y, float width, float height, float angle) {
         float vertices[] = {
             x,         y,           0.0f, 0.0f,
             x + width, y,           1.0f, 0.0f,
@@ -58,6 +68,14 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
             x + width, y + height,  1.0f, 1.0f,
             x,         y + height,  0.0f, 1.0f
         };
+
+        // Rotate around the pivot
+        for (int i = 0; i < 6; i++) {
+            float& vx = vertices[i*4 + 0];
+            float& vy = vertices[i*4 + 1];
+            rotatePoint(vx, vy, pivotX, pivotY, angle);
+        }
+
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glUseProgram(shaderProgram);
@@ -66,16 +84,16 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
 
     // --- Draw 4 Legs ---
     // We choose leg positions relative to fox.x (bottom left of the fox composite shape).
-    drawRectangle(x + 1,        y, legWidth, legHeight);
-    drawRectangle(x + 7,        y, legWidth, legHeight);
-    drawRectangle(x + 13,       y, legWidth, legHeight);
-    drawRectangle(x + 19,       y, legWidth, legHeight);
+    drawRectangleWithRotation(x + 1,        y, legWidth, legHeight, legSwingAngle);
+    drawRectangleWithRotation(x + 7,        y, legWidth, legHeight, -legSwingAngle);
+    drawRectangleWithRotation(x + 13,       y, legWidth, legHeight, legSwingAngle);
+    drawRectangleWithRotation(x + 19,       y, legWidth, legHeight, -legSwingAngle);
 
     // --- Draw Body ---
     // Body sits above the legs.
     float bodyX = x;
     float bodyY = y + legHeight;
-    drawRectangle(bodyX, bodyY, bodyWidth, bodyHeight);
+    drawRectangleWithRotation(bodyX, bodyY, bodyWidth, bodyHeight, 0.0f);
 
     // --- Draw Head as a Circle ---
     // Place the head on the left side of the body.
@@ -95,6 +113,10 @@ void Fox::render(unsigned int shaderProgram, unsigned int VAO) const {
         float vy = centerY + headRadius * sin(angle);
         float tx = (cos(angle) + 1.0f) * 0.5f;
         float ty = (sin(angle) + 1.0f) * 0.5f;
+
+        // Rotate around the pivot
+        rotatePoint(vx, vy, pivotX, pivotY, 0.0f);
+
         circleVertices.push_back(vx);
         circleVertices.push_back(vy);
         circleVertices.push_back(tx);

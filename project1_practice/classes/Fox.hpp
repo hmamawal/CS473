@@ -19,14 +19,14 @@ public:
     void setDirection(int direction);
 
     void move(const std::vector<Tile>& tiles);
-
-    // Add this:
     void render(unsigned int shaderProgram, unsigned int VAO) const;
 
 private:
     float x, y;
     float speed;
     int direction;
+    float legSwingAngle = 0.0f;
+    float legSwingDirection = 1.0f;
 };
 
 #endif // FOX_HPP
