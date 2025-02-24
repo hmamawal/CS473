@@ -27,8 +27,6 @@ const unsigned int TILE_SIZE = 20;
 const float PLAYER_SIZE = 10.0f;
 const float PLAYER_SPEED = 10.0f;
 
-
-
 void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
 unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
@@ -156,6 +154,32 @@ void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int texture, int numHearts) {
+    float heartSize = 20.0f;
+    for (int i = 0; i < numHearts; ++i) {
+        float x = SCR_WIDTH - (i + 1) * (heartSize + 10.0f);
+        float y = SCR_HEIGHT - heartSize - 10.0f;
+
+        float vertices[] = {
+            // positions        // texture coords
+            x, y,            0.0f, 0.0f,
+            x + heartSize, y,            1.0f, 0.0f,
+            x + heartSize, y + heartSize, 1.0f, 1.0f,
+
+            x, y,            0.0f, 0.0f,
+            x + heartSize, y + heartSize, 1.0f, 1.0f,
+            x, y + heartSize, 0.0f, 1.0f
+        };
+
+        glBindBuffer(GL_ARRAY_BUFFER, VAO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+        glUseProgram(shaderProgram);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+}
+
 int main() {
     // glfw: initialize and configure
     glfwInit();
@@ -222,8 +246,9 @@ int main() {
 
     unsigned int shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
 
-    // Load texture
-    unsigned int texture = loadTexture("images/minecraft_tree.png");
+    // Load textures
+    unsigned int tileTexture = loadTexture("images/minecraft_tree.png");
+    unsigned int heartTexture = loadTexture("images/heart_full.png");
 
     // Set up vertex data (and buffer(s)) and configure vertex attributes
     unsigned int VBO, VAO;
@@ -270,7 +295,7 @@ int main() {
 
         // Render the tiles
         for (const Tile& tile : tiles) {
-            renderTile(tile, shaderProgram, VAO, texture);
+            renderTile(tile, shaderProgram, VAO, tileTexture);
         }
 
         // Render the player
@@ -285,6 +310,9 @@ int main() {
         for (const Fox& fox : foxes) {
             renderFox(fox, shaderProgram, VAO);
         }
+
+        // Render the hearts
+        renderHearts(shaderProgram, VAO, heartTexture, 3);
 
         // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
