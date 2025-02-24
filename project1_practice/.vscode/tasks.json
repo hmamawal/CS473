@@ -17,6 +17,7 @@
                     "${workspaceFolder}\\classes\\Tile.cpp",  
                     "${workspaceFolder}\\utilities\\environment.cpp", 
                     "${workspaceFolder}\\utilities\\build_shapes.cpp",
+                    "${workspaceFolder}\\utilities\\helper.cpp",
                     "${workspaceFolder}\\Game\\ResourceManager.cpp",
                     "${workspaceFolder}\\Game\\Collision.cpp",
                     "${workspaceFolder}\\Game\\level_loader.cpp",   

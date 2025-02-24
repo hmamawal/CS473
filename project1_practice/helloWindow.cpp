@@ -72,22 +72,6 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
     }
 }
 
-void rotatePoint(float& px, float& py, float cx, float cy, float angleDeg)
-{
-    float rad = glm::radians(angleDeg);
-    float tx = px - cx;
-    float ty = py - cy;
-
-    float cosA = cos(rad);
-    float sinA = sin(rad);
-
-    float rx = tx * cosA - ty * sinA;
-    float ry = tx * sinA + ty * cosA;
-
-    px = rx + cx;
-    py = ry + cy;
-}
-
 
 // Render the fox as a composite shape: four legs, a horizontal body, and a circular head.
 void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
