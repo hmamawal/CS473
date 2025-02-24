@@ -28,9 +28,6 @@
 // Function declarations
 //
 void processInput(GLFWwindow *window);
-unsigned int compileShader(unsigned int type, const std::string& source);
-unsigned int createShaderProgram(const std::string& vertexShader, const std::string& fragmentShader);
-unsigned int loadTexture(const char* path);
 
 
 // Load the map from a text file. (For simplicity, only walls and entities are processed.)
