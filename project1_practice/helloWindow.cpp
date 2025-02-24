@@ -7,11 +7,11 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-//#include "classes/basic_shape.hpp"
-//#include "classes/vertex_attribute.hpp"
-//#include "classes/Shader.hpp"
-//#include "utilities/build_shapes.hpp"
-//#include "classes/camera.hpp"
+#include "classes/basic_shape.hpp"
+#include "classes/vertex_attribute.hpp"
+#include "classes/Shader.hpp"
+#include "utilities/build_shapes.hpp"
+#include "classes/camera.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,6 +26,9 @@ const unsigned int SCR_HEIGHT = 600;
 const unsigned int TILE_SIZE = 20;
 const float PLAYER_SIZE = 10.0f;
 const float PLAYER_SPEED = 10.0f;
+
+// Maximum hearts the player can have.
+const int MAX_HEARTS = 3;
 
 void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
@@ -75,17 +78,47 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player, std::vect
     return tiles;
 }
 
+// Modified renderHearts: now takes both a full and empty heart texture along with current heart count.
+void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int fullTexture, unsigned int emptyTexture, int currentHearts, int maxHearts) {
+    float heartSize = 20.0f;
+    for (int i = 0; i < maxHearts; ++i) {
+        float x = SCR_WIDTH - (i + 1) * (heartSize + 10.0f);
+        float y = SCR_HEIGHT - heartSize - 10.0f;
+
+        // Use full heart if within the current heart count, otherwise use empty heart.
+        unsigned int textureToUse = (i < currentHearts) ? fullTexture : emptyTexture;
+
+        float vertices[] = {
+            // positions        // texture coords
+            x, y,                      0.0f, 0.0f,
+            x + heartSize, y,          1.0f, 0.0f,
+            x + heartSize, y + heartSize, 1.0f, 1.0f,
+
+            x, y,                      0.0f, 0.0f,
+            x + heartSize, y + heartSize, 1.0f, 1.0f,
+            x, y + heartSize,          0.0f, 1.0f
+        };
+
+        glBindBuffer(GL_ARRAY_BUFFER, VAO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+        glUseProgram(shaderProgram);
+        glBindTexture(GL_TEXTURE_2D, textureToUse);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+}
+
 void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) {
     if (tile.isWall) {
         float vertices[] = {
             // positions        // texture coords
-            tile.x, tile.y,            0.0f, 0.0f,
-            tile.x + TILE_SIZE, tile.y,            1.0f, 0.0f,
+            tile.x, tile.y,                     0.0f, 0.0f,
+            tile.x + TILE_SIZE, tile.y,         1.0f, 0.0f,
             tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
 
-            tile.x, tile.y,            0.0f, 0.0f,
+            tile.x, tile.y,                     0.0f, 0.0f,
             tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
-            tile.x, tile.y + TILE_SIZE, 0.0f, 1.0f
+            tile.x, tile.y + TILE_SIZE,         0.0f, 1.0f
         };
 
         glBindBuffer(GL_ARRAY_BUFFER, VAO);
@@ -100,13 +133,13 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
 void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
         // positions        // texture coords
-        player.x, player.y,            0.0f, 0.0f,
-        player.x + PLAYER_SIZE, player.y,            1.0f, 0.0f,
+        player.x, player.y,                     0.0f, 0.0f,
+        player.x + PLAYER_SIZE, player.y,       1.0f, 0.0f,
         player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
 
-        player.x, player.y,            0.0f, 0.0f,
+        player.x, player.y,                     0.0f, 0.0f,
         player.x + PLAYER_SIZE, player.y + PLAYER_SIZE, 1.0f, 1.0f,
-        player.x, player.y + PLAYER_SIZE, 0.0f, 1.0f
+        player.x, player.y + PLAYER_SIZE,       0.0f, 1.0f
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
@@ -119,13 +152,13 @@ void renderPlayer(const Player& player, unsigned int shaderProgram, unsigned int
 void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
         // positions        // texture coords
-        duck.x, duck.y,            0.0f, 0.0f,
-        duck.x + PLAYER_SIZE, duck.y,            1.0f, 0.0f,
+        duck.x, duck.y,                     0.0f, 0.0f,
+        duck.x + PLAYER_SIZE, duck.y,       1.0f, 0.0f,
         duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
 
-        duck.x, duck.y,            0.0f, 0.0f,
+        duck.x, duck.y,                     0.0f, 0.0f,
         duck.x + PLAYER_SIZE, duck.y + PLAYER_SIZE, 1.0f, 1.0f,
-        duck.x, duck.y + PLAYER_SIZE, 0.0f, 1.0f
+        duck.x, duck.y + PLAYER_SIZE,       0.0f, 1.0f
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
@@ -138,13 +171,13 @@ void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) 
 void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
     float vertices[] = {
         // positions        // texture coords
-        fox.x, fox.y,            0.0f, 0.0f,
-        fox.x + PLAYER_SIZE, fox.y,            1.0f, 0.0f,
+        fox.x, fox.y,                     0.0f, 0.0f,
+        fox.x + PLAYER_SIZE, fox.y,       1.0f, 0.0f,
         fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
 
-        fox.x, fox.y,            0.0f, 0.0f,
+        fox.x, fox.y,                     0.0f, 0.0f,
         fox.x + PLAYER_SIZE, fox.y + PLAYER_SIZE, 1.0f, 1.0f,
-        fox.x, fox.y + PLAYER_SIZE, 0.0f, 1.0f
+        fox.x, fox.y + PLAYER_SIZE,       0.0f, 1.0f
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, VAO);
@@ -152,32 +185,6 @@ void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
 
     glUseProgram(shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-}
-
-void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int texture, int numHearts) {
-    float heartSize = 20.0f;
-    for (int i = 0; i < numHearts; ++i) {
-        float x = SCR_WIDTH - (i + 1) * (heartSize + 10.0f);
-        float y = SCR_HEIGHT - heartSize - 10.0f;
-
-        float vertices[] = {
-            // positions        // texture coords
-            x, y,            0.0f, 0.0f,
-            x + heartSize, y,            1.0f, 0.0f,
-            x + heartSize, y + heartSize, 1.0f, 1.0f,
-
-            x, y,            0.0f, 0.0f,
-            x + heartSize, y + heartSize, 1.0f, 1.0f,
-            x, y + heartSize, 0.0f, 1.0f
-        };
-
-        glBindBuffer(GL_ARRAY_BUFFER, VAO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
-        glUseProgram(shaderProgram);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
 }
 
 int main() {
@@ -207,8 +214,9 @@ int main() {
         return -1;
     }
 
-    // Initialize the player
+    // Initialize the player and heart count
     Player player = { 0.0f, 0.0f };
+    int playerHearts = MAX_HEARTS;
     std::vector<Duck> ducks;
     std::vector<Fox> foxes;
 
@@ -249,6 +257,7 @@ int main() {
     // Load textures
     unsigned int tileTexture = loadTexture("images/minecraft_tree.png");
     unsigned int heartTexture = loadTexture("images/heart_full.png");
+    unsigned int heartEmptyTexture = loadTexture("images/heart_empty.png");
 
     // Set up vertex data (and buffer(s)) and configure vertex attributes
     unsigned int VBO, VAO;
@@ -289,6 +298,37 @@ int main() {
             fox.move(tiles);
         }
 
+        // Check collision with foxes: lose a heart and remove the fox upon collision.
+        for (auto it = foxes.begin(); it != foxes.end(); ) {
+            if (player.x < it->x + PLAYER_SIZE &&
+                player.x + PLAYER_SIZE > it->x &&
+                player.y < it->y + PLAYER_SIZE &&
+                player.y + PLAYER_SIZE > it->y) {
+                playerHearts--;
+                it = foxes.erase(it);
+                if (playerHearts <= 0) {
+                    glfwSetWindowShouldClose(window, true);
+                    break;
+                }
+            } else {
+                ++it;
+            }
+        }
+
+        // Check collision with ducks: gain a heart (up to MAX_HEARTS) and remove the duck.
+        for (auto it = ducks.begin(); it != ducks.end(); ) {
+            if (player.x < it->x + PLAYER_SIZE &&
+                player.x + PLAYER_SIZE > it->x &&
+                player.y < it->y + PLAYER_SIZE &&
+                player.y + PLAYER_SIZE > it->y) {
+                if (playerHearts < MAX_HEARTS)
+                    playerHearts++;
+                it = ducks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
         // render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -311,8 +351,8 @@ int main() {
             renderFox(fox, shaderProgram, VAO);
         }
 
-        // Render the hearts
-        renderHearts(shaderProgram, VAO, heartTexture, 3);
+        // Render the hearts (full vs empty based on playerHearts)
+        renderHearts(shaderProgram, VAO, heartTexture, heartEmptyTexture, playerHearts, MAX_HEARTS);
 
         // glfw: swap buffers and poll IO events
         glfwSwapBuffers(window);
