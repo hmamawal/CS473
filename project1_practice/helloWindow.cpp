@@ -53,25 +53,6 @@ void renderHearts(unsigned int shaderProgram, unsigned int VAO, unsigned int ful
     }
 }
 
-// Render a wall tile (unchanged)
-void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, unsigned int texture) {
-    if (tile.isWall) {
-        float vertices[] = {
-            tile.x, tile.y,                     0.0f, 0.0f,
-            tile.x + TILE_SIZE, tile.y,         1.0f, 0.0f,
-            tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
-            tile.x, tile.y,                     0.0f, 0.0f,
-            tile.x + TILE_SIZE, tile.y + TILE_SIZE, 1.0f, 1.0f,
-            tile.x, tile.y + TILE_SIZE,         0.0f, 1.0f
-        };
-        glBindBuffer(GL_ARRAY_BUFFER, VAO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glUseProgram(shaderProgram);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
-}
-
 // Render the duck as a composite shape: a circular body, a circular head, and two triangular wings.
 void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) {
     // Duck dimensions:
@@ -326,7 +307,7 @@ int main() {
 
         // Render each tile.
         for (const Tile& tile : tiles) {
-            renderTile(tile, shaderProgram, VAO, tileTexture);
+            tile.render(shaderProgram, VAO, tileTexture);
         }
         // Render composite player.
         player.render(legSwingAngle, shaderProgram, VAO);
