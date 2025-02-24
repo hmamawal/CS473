@@ -38,7 +38,7 @@ unsigned int createShaderProgram(const std::string& vertexShader, const std::str
 unsigned int loadTexture(const char* path);
 bool checkCollision(float x, float y, const std::vector<Tile>& tiles);
 
-std::vector<Tile> loadMap(const std::string& filename) {
+std::vector<Tile> loadMap(const std::string& filename, Player& player) {
     std::vector<Tile> tiles;
     std::ifstream file(filename);
     std::string line;
@@ -48,8 +48,18 @@ std::vector<Tile> loadMap(const std::string& filename) {
             Tile tile;
             tile.x = x * TILE_SIZE;
             tile.y = y * TILE_SIZE;
-            tile.isWall = (line[x] == '#');
-            tiles.push_back(tile);
+            if (line[x] == '#') {
+                tile.isWall = true;
+                tiles.push_back(tile);
+            } else if (line[x] == 'P') {
+                player.x = tile.x;
+                player.y = tile.y;
+                tile.isWall = false;
+                tiles.push_back(tile);
+            } else {
+                tile.isWall = false;
+                tiles.push_back(tile);
+            }
         }
         ++y;
     }
@@ -124,11 +134,11 @@ int main() {
         return -1;
     }
 
-    // Load the map
-    std::vector<Tile> tiles = loadMap("level.txt");
-
     // Initialize the player
-    Player player = { 100.0f, 100.0f };
+    Player player = { 0.0f, 0.0f };
+
+    // Load the map
+    std::vector<Tile> tiles = loadMap("level.txt", player);
 
     // Build and compile our shader program
     std::string vertexShaderSource = R"(
