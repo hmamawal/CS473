@@ -29,10 +29,10 @@ void Player::setSpeed(float sp)  { this->speed = sp; }
 // ------------------------------------------------------------------
 void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int VAO) const
 {
-    // Dimensions
-    float legHeight = 5.0f, legWidth = 3.0f;
-    float bodyHeight = 10.0f, bodyWidth = 10.0f;
-    float headRadius = 5.0f;
+    // Adjusted dimensions to fit in smaller spaces
+    float legHeight = 3.0f, legWidth = 2.0f;
+    float bodyHeight = 6.0f, bodyWidth = 6.0f;
+    float headRadius = 3.0f;
 
     // Overall pivot for the player's rotation
     float pivotX = this->x + bodyWidth * 0.5f;
@@ -78,14 +78,14 @@ void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int V
     //
     // --- DRAW LEGS ---
     //
-    float leftLegTopX  = this->x + 2.0f;
+    float leftLegTopX  = this->x + 1.0f;
     float leftLegTopY  = this->y + legHeight;    
-    float rightLegTopX = this->x + 7.0f;
+    float rightLegTopX = this->x + 4.0f;
     float rightLegTopY = this->y + legHeight;
 
     // Left leg (localAngle = +swingAngle)
     drawRectangleWithLegSwing(
-        this->x + 2.0f, // lower-left
+        this->x + 1.0f, // lower-left
         this->y,
         legWidth,
         legHeight,
@@ -95,7 +95,7 @@ void Player::render(float swingAngle, unsigned int shaderProgram, unsigned int V
     );
     // Right leg (localAngle = -swingAngle)
     drawRectangleWithLegSwing(
-        this->x + 7.0f,
+        this->x + 4.0f,
         this->y,
         legWidth,
         legHeight,

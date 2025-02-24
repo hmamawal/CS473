@@ -99,28 +99,28 @@ int main() {
         // For the player's orientation (in the main loop):
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             // Move up
-            if (!checkCollision(player.getX(), player.getY() - PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+            if (!checkCollision(player.getX(), player.getY() - PLAYER_SPEED, 6.0f, 12.0f, tiles))
                 player.setY(player.getY() - PLAYER_SPEED);
             player.setAngle(90.0f); // Facing 'north'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
             // Move down
-            if (!checkCollision(player.getX(), player.getY() + PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+            if (!checkCollision(player.getX(), player.getY() + PLAYER_SPEED, 6.0f, 12.0f, tiles))
                 player.setY(player.getY() + PLAYER_SPEED);
             player.setAngle(270.0f); // Facing 'south'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             // Move left
-            if (!checkCollision(player.getX() - PLAYER_SPEED, player.getY(), PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+            if (!checkCollision(player.getX() - PLAYER_SPEED, player.getY(), 6.0f, 12.0f, tiles))
                 player.setX(player.getX() - PLAYER_SPEED);
             player.setAngle(180.0f); // Facing 'west'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             // Move right
-            if (!checkCollision(player.getX() + PLAYER_SPEED, player.getY(), PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+            if (!checkCollision(player.getX() + PLAYER_SPEED, player.getY(), 6.0f, 12.0f, tiles))
                 player.setX(player.getX() + PLAYER_SPEED);
             player.setAngle(0.0f); // Facing 'east'
             movedThisFrame = true;
@@ -147,9 +147,9 @@ int main() {
         // Check collision with foxes: use the player's composite bounding box.
         for (auto it = foxes.begin(); it != foxes.end(); ) {
             if (player.getX() < it->getX() + ENTITY_SIZE &&
-                player.getX() + PLAYER_WIDTH > it->getX() &&
+                player.getX() + 6.0f > it->getX() &&
                 player.getY() < it->getY() + ENTITY_SIZE &&
-                player.getY() + PLAYER_HEIGHT > it->getY()) {
+                player.getY() + 12.0f > it->getY()) {
                 playerHearts--;
                 it = foxes.erase(it);
                 if (playerHearts <= 0) {
@@ -165,9 +165,9 @@ int main() {
         // Check collision with ducks: gain a heart (up to MAX_HEARTS) and remove the duck.
         for (auto it = ducks.begin(); it != ducks.end(); ) {
             if (player.getX() < it->getX() + ENTITY_SIZE &&
-                player.getX() + PLAYER_WIDTH > it->getX() &&
+                player.getX() + 6.0f > it->getX() &&
                 player.getY() < it->getY() + ENTITY_SIZE &&
-                player.getY() + PLAYER_HEIGHT > it->getY()) {
+                player.getY() + 12.0f > it->getY()) {
                 if (playerHearts < MAX_HEARTS)
                     playerHearts++;
                 it = ducks.erase(it);
