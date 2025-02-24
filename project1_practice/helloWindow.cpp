@@ -7,11 +7,11 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include "classes/basic_shape.hpp"
-#include "classes/vertex_attribute.hpp"
-#include "classes/Shader.hpp"
-#include "utilities/build_shapes.hpp"
-#include "classes/camera.hpp"
+//#include "classes/basic_shape.hpp"
+//#include "classes/vertex_attribute.hpp"
+//#include "classes/Shader.hpp"
+//#include "utilities/build_shapes.hpp"
+//#include "classes/camera.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
