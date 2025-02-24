@@ -16,6 +16,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "classes/Player.hpp"
+#include "classes/Tile.hpp"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -24,10 +25,7 @@ const unsigned int TILE_SIZE = 20;
 const float PLAYER_SIZE = 10.0f;
 const float PLAYER_SPEED = 10.0f;
 
-struct Tile {
-    float x, y;
-    bool isWall;
-};
+
 
 void processInput(GLFWwindow *window);
 unsigned int compileShader(unsigned int type, const std::string& source);
