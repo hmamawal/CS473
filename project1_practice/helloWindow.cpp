@@ -72,74 +72,6 @@ void renderTile(const Tile& tile, unsigned int shaderProgram, unsigned int VAO, 
     }
 }
 
-
-// Render the fox as a composite shape: four legs, a horizontal body, and a circular head.
-void renderFox(const Fox& fox, unsigned int shaderProgram, unsigned int VAO) {
-    // Fox dimensions:
-    float legWidth = 3.0f;
-    float legHeight = 3.0f;
-    float bodyWidth = 22.0f;  // wider horizontal rectangle
-    float bodyHeight = 8.0f;
-    float headRadius = 4.0f;
-
-    // Lambda to draw a rectangle (two triangles)
-    auto drawRectangle = [&](float x, float y, float width, float height) {
-        float vertices[] = {
-            x,         y,           0.0f, 0.0f,
-            x + width, y,           1.0f, 0.0f,
-            x + width, y + height,  1.0f, 1.0f,
-            x,         y,           0.0f, 0.0f,
-            x + width, y + height,  1.0f, 1.0f,
-            x,         y + height,  0.0f, 1.0f
-        };
-        glBindBuffer(GL_ARRAY_BUFFER, VAO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glUseProgram(shaderProgram);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    };
-
-    // --- Draw 4 Legs ---
-    // We choose leg positions relative to fox.x (bottom left of the fox composite shape).
-    drawRectangle(fox.x + 1,        fox.y, legWidth, legHeight);
-    drawRectangle(fox.x + 7,        fox.y, legWidth, legHeight);
-    drawRectangle(fox.x + 13,       fox.y, legWidth, legHeight);
-    drawRectangle(fox.x + 19,       fox.y, legWidth, legHeight);
-
-    // --- Draw Body ---
-    // Body sits above the legs.
-    float bodyX = fox.x;
-    float bodyY = fox.y + legHeight;
-    drawRectangle(bodyX, bodyY, bodyWidth, bodyHeight);
-
-    // --- Draw Head as a Circle ---
-    // Place the head on the left side of the body.
-    int segments = 20;
-    std::vector<float> circleVertices;
-    circleVertices.reserve((segments + 2) * 4); // each vertex: 4 floats
-    // Head center: to the left of the body, vertically centered on the body.
-    float centerX = bodyX - headRadius;
-    float centerY = bodyY + bodyHeight / 2.0f;
-    circleVertices.push_back(centerX);
-    circleVertices.push_back(centerY);
-    circleVertices.push_back(0.5f); // texture coordinate (arbitrary)
-    circleVertices.push_back(0.5f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = 2.0f * 3.14159f * i / segments;
-        float vx = centerX + headRadius * cos(angle);
-        float vy = centerY + headRadius * sin(angle);
-        float tx = (cos(angle) + 1.0f) * 0.5f;
-        float ty = (sin(angle) + 1.0f) * 0.5f;
-        circleVertices.push_back(vx);
-        circleVertices.push_back(vy);
-        circleVertices.push_back(tx);
-        circleVertices.push_back(ty);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, VAO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, circleVertices.size() * sizeof(float), circleVertices.data());
-    glUseProgram(shaderProgram);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 2);
-}
-
 // Render the duck as a composite shape: a circular body, a circular head, and two triangular wings.
 void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) {
     // Duck dimensions:
@@ -222,7 +154,6 @@ void renderDuck(const Duck& duck, unsigned int shaderProgram, unsigned int VAO) 
     glUseProgram(shaderProgram);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
-
 
 //
 // MAIN
@@ -359,10 +290,10 @@ int main() {
 
         // Check collision with foxes: use the player's composite bounding box.
         for (auto it = foxes.begin(); it != foxes.end(); ) {
-            if (player.getX() < it->x + ENTITY_SIZE &&
-                player.getX() + PLAYER_WIDTH > it->x &&
-                player.getY() < it->y + ENTITY_SIZE &&
-                player.getY() + PLAYER_HEIGHT > it->y) {
+            if (player.getX() < it->getX() + ENTITY_SIZE &&
+                player.getX() + PLAYER_WIDTH > it->getX() &&
+                player.getY() < it->getY() + ENTITY_SIZE &&
+                player.getY() + PLAYER_HEIGHT > it->getY()) {
                 playerHearts--;
                 it = foxes.erase(it);
                 if (playerHearts <= 0) {
@@ -405,7 +336,7 @@ int main() {
             renderDuck(duck, shaderProgram, VAO);
         }
         for (const Fox& fox : foxes) {
-            renderFox(fox, shaderProgram, VAO);
+            fox.render(shaderProgram, VAO);
         }
         // Render hearts.
         renderHearts(shaderProgram, VAO, heartTexture, heartEmptyTex, playerHearts, MAX_HEARTS);
@@ -426,4 +357,3 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
-

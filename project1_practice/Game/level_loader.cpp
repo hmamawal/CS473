@@ -32,9 +32,7 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player,
                 tile.isWall = false;
                 tiles.push_back(tile);
             } else if (line[x] == 'F') {
-                Fox fox;
-                fox.x = x * TILE_SIZE;
-                fox.y = y * TILE_SIZE;
+                Fox fox(x * TILE_SIZE, y * TILE_SIZE);
                 foxes.push_back(fox);
                 tile.isWall = false;
                 tiles.push_back(tile);
