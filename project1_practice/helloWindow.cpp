@@ -256,6 +256,14 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && !checkCollision(player.x + playerSpeed, player.y, tiles))
             player.x += playerSpeed;
 
+        // Move ducks and foxes
+        for (Duck& duck : ducks) {
+            duck.move(tiles);
+        }
+        for (Fox& fox : foxes) {
+            fox.move(tiles);
+        }
+
         // render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
