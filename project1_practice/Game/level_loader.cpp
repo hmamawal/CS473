@@ -26,8 +26,8 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player,
                 tiles.push_back(tile);
             } else if (line[x] == 'D') {
                 Duck duck;
-                duck.x = x * TILE_SIZE;
-                duck.y = y * TILE_SIZE;
+                duck.setX(x * TILE_SIZE);
+                duck.setY(y * TILE_SIZE);
                 ducks.push_back(duck);
                 tile.isWall = false;
                 tiles.push_back(tile);
