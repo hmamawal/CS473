@@ -99,8 +99,8 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
     float headRadius = 5.0f;
 
     // Overall pivot for the player's rotation
-    float pivotX = player.x + bodyWidth * 0.5f;
-    float pivotY = player.y + (legHeight + bodyHeight + headRadius) * 0.5f;
+    float pivotX = player.getX() + bodyWidth * 0.5f;
+    float pivotY = player.getY() + (legHeight + bodyHeight + headRadius) * 0.5f;
 
     // We'll define a helper that draws a rectangle in local coordinates,
     // but rotates it around a given pivot for "leg swing," and THEN around
@@ -130,7 +130,7 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
         for (int i = 0; i < 6; i++) {
             float& vx = vertices[i*4 + 0];
             float& vy = vertices[i*4 + 1];
-            rotatePoint(vx, vy, pivotX, pivotY, player.angle);
+            rotatePoint(vx, vy, pivotX, pivotY, player.getAngle());
         }
 
         // Now send to GPU
@@ -145,15 +145,15 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
     // --- DRAW LEGS ---
     //
     // The top of each leg is the pivot for the leg swing
-    float leftLegTopX  = player.x + 2.0f;
-    float leftLegTopY  = player.y + legHeight;    // top = bottom + legHeight
-    float rightLegTopX = player.x + 7.0f;
-    float rightLegTopY = player.y + legHeight;
+    float leftLegTopX  = player.getX() + 2.0f;
+    float leftLegTopY  = player.getY() + legHeight;    // top = bottom + legHeight
+    float rightLegTopX = player.getX() + 7.0f;
+    float rightLegTopY = player.getY() + legHeight;
 
     // Left leg swings with +swingAngle, right leg with -swingAngle (or vice versa).
     drawRectangleWithLegSwing(
-        player.x + 2.0f, // rect lower-left X
-        player.y,        // rect lower-left Y
+        player.getX() + 2.0f, // rect lower-left X
+        player.getY(),        // rect lower-left Y
         legWidth,
         legHeight,
         leftLegTopX,     // pivot X
@@ -162,8 +162,8 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
     );
 
     drawRectangleWithLegSwing(
-        player.x + 7.0f,
-        player.y,
+        player.getX() + 7.0f,
+        player.getY(),
         legWidth,
         legHeight,
         rightLegTopX,
@@ -178,12 +178,12 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
     // For the body, we do not have a local pivot (we don’t want it “swinging”),
     // so localAngle = 0. But we still must rotate around the player's pivot at the end.
     drawRectangleWithLegSwing(
-        player.x,
-        player.y + legHeight, // body just above legs
+        player.getX(),
+        player.getY() + legHeight, // body just above legs
         bodyWidth,
         bodyHeight,
-        player.x,             // an unused pivot
-        player.y + legHeight,
+        player.getX(),             // an unused pivot
+        player.getY() + legHeight,
         0.0f                  // no local swing
     );
 
@@ -197,8 +197,8 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
         std::vector<float> circleVertices;
         circleVertices.reserve((segments + 2) * 4);
 
-        float centerX = player.x + bodyWidth/2.0f;
-        float centerY = player.y + legHeight + bodyHeight + headRadius;
+        float centerX = player.getX() + bodyWidth/2.0f;
+        float centerY = player.getY() + legHeight + bodyHeight + headRadius;
 
         // Center vertex
         circleVertices.push_back(centerX);
@@ -214,7 +214,7 @@ void renderPlayer(const Player& player, float swingAngle, unsigned int shaderPro
             float ty = (sin(angle) + 1.0f) * 0.5f;
 
             // Rotate around the player's pivot (no local pivot for the head)
-            rotatePoint(vx, vy, pivotX, pivotY, player.angle);
+            rotatePoint(vx, vy, pivotX, pivotY, player.getAngle());
 
             circleVertices.push_back(vx);
             circleVertices.push_back(vy);
@@ -469,30 +469,30 @@ int main() {
         // For the player's orientation (in the main loop):
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             // Move up
-            if (!checkCollision(player.x, player.y - PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-                player.y -= PLAYER_SPEED;
-            player.angle = 90.0f; // Facing 'north'
+            if (!checkCollision(player.getX(), player.getY() - PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.setY(player.getY() - PLAYER_SPEED);
+            player.setAngle(90.0f); // Facing 'north'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
             // Move down
-            if (!checkCollision(player.x, player.y + PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-                player.y += PLAYER_SPEED;
-            player.angle = 270.0f; // Facing 'south'
+            if (!checkCollision(player.getX(), player.getY() + PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.setY(player.getY() + PLAYER_SPEED);
+            player.setAngle(270.0f); // Facing 'south'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             // Move left
-            if (!checkCollision(player.x - PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-                player.x -= PLAYER_SPEED;
-            player.angle = 180.0f; // Facing 'west'
+            if (!checkCollision(player.getX() - PLAYER_SPEED, player.getY(), PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.setX(player.getX() - PLAYER_SPEED);
+            player.setAngle(180.0f); // Facing 'west'
             movedThisFrame = true;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             // Move right
-            if (!checkCollision(player.x + PLAYER_SPEED, player.y, PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
-                player.x += PLAYER_SPEED;
-            player.angle = 0.0f; // Facing 'east'
+            if (!checkCollision(player.getX() + PLAYER_SPEED, player.getY(), PLAYER_WIDTH, PLAYER_HEIGHT, tiles))
+                player.setX(player.getX() + PLAYER_SPEED);
+            player.setAngle(0.0f); // Facing 'east'
             movedThisFrame = true;
         }
 
@@ -516,10 +516,10 @@ int main() {
 
         // Check collision with foxes: use the player's composite bounding box.
         for (auto it = foxes.begin(); it != foxes.end(); ) {
-            if (player.x < it->x + ENTITY_SIZE &&
-                player.x + PLAYER_WIDTH > it->x &&
-                player.y < it->y + ENTITY_SIZE &&
-                player.y + PLAYER_HEIGHT > it->y) {
+            if (player.getX() < it->x + ENTITY_SIZE &&
+                player.getX() + PLAYER_WIDTH > it->x &&
+                player.getY() < it->y + ENTITY_SIZE &&
+                player.getY() + PLAYER_HEIGHT > it->y) {
                 playerHearts--;
                 it = foxes.erase(it);
                 if (playerHearts <= 0) {
@@ -534,10 +534,10 @@ int main() {
 
         // Check collision with ducks: gain a heart (up to MAX_HEARTS) and remove the duck.
         for (auto it = ducks.begin(); it != ducks.end(); ) {
-            if (player.x < it->x + ENTITY_SIZE &&
-                player.x + PLAYER_WIDTH > it->x &&
-                player.y < it->y + ENTITY_SIZE &&
-                player.y + PLAYER_HEIGHT > it->y) {
+            if (player.getX() < it->x + ENTITY_SIZE &&
+                player.getX() + PLAYER_WIDTH > it->x &&
+                player.getY() < it->y + ENTITY_SIZE &&
+                player.getY() + PLAYER_HEIGHT > it->y) {
                 if (playerHearts < MAX_HEARTS)
                     playerHearts++;
                 it = ducks.erase(it);

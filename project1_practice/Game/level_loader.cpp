@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 
-
 std::vector<Tile> loadMap(const std::string& filename, Player& player,
                           std::vector<Duck>& ducks, std::vector<Fox>& foxes)
 {
@@ -21,8 +20,8 @@ std::vector<Tile> loadMap(const std::string& filename, Player& player,
                 tiles.push_back(tile);
             } else if (line[x] == 'P') {
                 // Set player's starting position.
-                player.x = x * TILE_SIZE;
-                player.y = y * TILE_SIZE;
+                player.setX(x * TILE_SIZE);
+                player.setY(y * TILE_SIZE);
                 tile.isWall = false;
                 tiles.push_back(tile);
             } else if (line[x] == 'D') {

@@ -12,6 +12,7 @@
                     "${workspaceFolder}\\classes\\vertex_attribute.cpp", 
                     "${workspaceFolder}\\classes\\basic_shape.cpp",  
                     "${workspaceFolder}\\classes\\Fox.cpp",  
+                    "${workspaceFolder}\\classes\\Player.cpp", 
                     "${workspaceFolder}\\classes\\Duck.cpp",  
                     "${workspaceFolder}\\classes\\Tile.cpp",  
                     "${workspaceFolder}\\utilities\\environment.cpp", 
