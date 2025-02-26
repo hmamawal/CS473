@@ -1,0 +1,417 @@
+\documentclass{article}
+\usepackage{amsmath,graphicx,hyperref,xcolor,float,pdfpages}
+\usepackage{minted} % for elegant code formatting
+% Optionally, set styles for minted:
+\setminted{
+    linenos,
+    frame=lines,
+    fontsize=\small,
+    breaklines=true,
+    framesep=2mm
+}
+
+% Define a light gray background for other verbatim content if needed
+\definecolor{bgcolor}{rgb}{0.95,0.95,0.95}
+
+\title{CS473 Homework \#4 (Basic Lighting)}
+\date{DUE: 0740 on February 26, 2025}
+\begin{document}
+
+% CS400: The titlepage section creates a standard coverpage. 
+% CS400: Update your instructor, name, and date.
+% CS400: You must still follow the signature requires as described in Canvas.
+
+\begin{titlepage}
+\begin{centering}
+
+UNITED STATES MILITARY ACADEMY\vspace{4em}
+
+Professional Considerations Paper\vspace{4em}
+
+CS400: Professional Considerations in Computing \vspace{4em}
+
+SECTION E1\vspace{1em}
+
+COL TOM BABBITT or DR EDWARD SOBIESK\vspace{4em}
+
+BY\vspace{1em}
+
+CADET IAM THELEADER `27, CO H1\vspace{1em}
+
+WEST POINT, NEW YORK\vspace{1em}
+
+
+28 AUGUST 2023\vspace{4em}
+
+\end{centering}
+
+\noindent
+\textunderscore \textunderscore \textunderscore \textunderscore \textunderscore \textunderscore I CERTIFY THAT I HAVE COMPLETELY DOCUMENTED ALL SOURCES THAT I USED TO COMPLETE THIS ASSIGNMENT AND THAT I ACKNOWLEDGED ALL ASSISTANCE I
+RECEIVED IN THE COMPLETION OF THIS ASSIGNMENT. \vspace{2em}
+
+\noindent
+\textunderscore\textunderscore\textunderscore \textunderscore \textunderscore \textunderscore I CERTIFY THAT I DID NOT USE ANY SOURCES OR RECEIVE ANY ASSISTANCE REQUIRING DOCUMENTATION WHILE COMPLETING THIS ASSIGNMENT. \vspace{2em}
+
+\noindent
+SIGNATURE: \textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore \textunderscore \textunderscore \textunderscore\textunderscore  
+\end{titlepage}
+
+
+\maketitle
+
+
+
+\section*{Instructions}
+\begin{itemize}
+    \item Show your work below (partial credit)! Acceptable options: handwritten scanned work (make sure it is numbered) or add your work to this document.
+    \item All numbers in your final answers will show the result to three decimal places.
+\end{itemize}
+
+You work on adding light to your scene. Although our sun is often treated as a directional light, you treat the star as a point light giving off a slightly yellow light \textbf{RGB=(0.9,0.9,0.5)}. The star’s position is at the point \((0, 0, -10)\).
+
+\section*{Problems}
+\subsection*{1. (3 pts)}
+The strength of the star’s ambient light is \(0.2\). A purple planet \(\text{RGB}=(0.7, 0.2, 0.7)\) orbits the star. What color does the planet appear under \textbf{JUST} the ambient light from the star?
+
+\subsubsection{Solution}
+According to the Learn OpenGL Website\footnote{\url{https://learnopengl.com/Lighting/Basic-Lighting}}, we can use the following equation code:\\ 
+\begin{minted}{python}
+void main()
+{
+    float ambientStrength = 0.1;
+    vec3 ambient = ambientStrength * lightColor;
+
+    vec3 result = ambient * objectColor;
+    FragColor = vec4(result, 1.0);
+}  
+\end{minted}
+\\ Using Python code, we can do this math without the OpenGL context\footnote{\url{https://chatgpt.com/share/67bdcded-09bc-8003-9e75-b285bdb96422}}: \\ 
+
+\begin{minted}{python}
+import numpy as np
+
+# Given values
+ambient_strength = 0.1
+light_color = np.array([1.0, 1.0, 1.0])  # White light
+object_color = np.array([1.0, 0.5, 0.3])  
+# Some object color (Reddish-orange)
+
+# Compute ambient lighting component
+ambient = ambient_strength * light_color
+
+# Compute final color result
+result_color = ambient * object_color
+
+# Display the results
+result_color
+\end{minted} 
+\\Here is the result of this arbitrary example: $array([0.1 , 0.05, 0.03])$ \\
+
+For our specific problem: \\
+
+\begin{minted}{python}
+import numpy as np
+
+# Given values
+ambient_strength = 0.2
+light_color = np.array([0.9, 0.9, 0.5])  # Yellow light
+object_color = np.array([0.7, 0.2, 0.7])  # Purple
+
+# Compute ambient lighting component
+ambient = ambient_strength * light_color
+
+# Compute final color result
+result_color = ambient * object_color
+
+# Display the results
+result_color
+\end{minted}
+
+Following is the result:
+\[[0.126 0.036 0.07 ]\]
+
+\subsection*{2. (7 pts)}
+A ship is orbiting the teal planet. The pilot looks at a small patch on the planet’s surface described by the triangle:
+\[
+(-15, 18, -10), \quad (-15, 18, -12), \quad (-15, 22, -11)
+\]
+Determine the surface normal of the patch. Recall that there are two possible surface normal vectors; choose the one that makes sense based on the location of the star.
+
+\subsubsection{Solution}
+I gave ChatGPT what I thought was most relevant from the reading, specifically section 4.4.1 and section 4.4.2, and asked it if those chapters would be relevant to 
+\begin{verbatim}
+    Determining the surface normal of the patch, given a triangle defined by 3 points (the corners)
+\end{verbatim}
+and it told me yes:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{problem2_solution_method.png}
+    \caption{problem2 solution methodology}
+    \label{fig:p2.1}
+\end{figure}
+
+It also gave me generic code:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{p2 generic code.png}
+    \caption{problem 2 generic code}
+    \label{fig:p2.2}
+\end{figure}
+
+which I used with my points:
+
+\begin{minted}{python}
+###########
+# PROBLEM 2
+###########
+
+# Define a new set of non-collinear triangle vertices
+a = np.array([-15, 18, -10])  # Vertex A at origin
+b = np.array([-15, 18, -12])  # Vertex B along X-axis
+c = np.array([-15, 22, -11])  # Vertex C along Y-axis
+
+# Compute the edge vectors
+E1 = b - a
+E2 = c - a
+
+# Compute the normal using the cross product
+N = np.cross(E1, E2)
+
+# Normalize the normal
+N_normalized = N / np.linalg.norm(N) if np.linalg.norm(N) != 0 else N
+
+# Display the normal vector
+print(f"PROBLEM 2 - normalized result = {N_normalized}")
+\end{minted}
+
+I got the following result: \textbf{PROBLEM 2 - normalized result = [1. 0. 0.]}
+
+\subsection*{3. (7 pts)}
+Determine the diffuse lighting at the point on the planet’s surface at \((-15,18,-11)\), using your surface normal from question 2. Determine the diffuse color at that point, given that the planet’s color is the same as in question 1 and the star is as defined at the beginning of this homework.
+
+For this problem, I gave ChatGPT the text from the "Calculating the diffuse color" section in the Learn OpenGL website and asked it to:
+\begin{verbatim}
+    write a python script and explain the reasoning behind this opengl code
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{p3_generic_code.png}
+    \caption{p3 generic code}
+    \label{fig:p3_generic_code}
+\end{figure}
+
+It also gave me the following explanation:
+\begin{enumerate}
+    \item Step 1 - Normalize Vectors\\
+    To ensure correct lighting calculations, all relevant vectors are normalized: 
+    \begin{itemize}
+        \item Normal Vector (norm): Convert it into a unit vector.
+        \item Light Direction (lightDir): Compute the direction from the fragment to the light source and normalize it.
+    \end{itemize}
+    \item Step 2 - Compute Diffuse Lighting\\ \\
+The diffuse component is calculated using the dot product between the normal vector and the light direction:\\ \\ $diff=max(dot(norm,lightDir),0.0)$\\ \\
+If the dot product is negative, it means the light is coming from behind the surface, and we set the diffuse contribution to zero.
+    \item Step 3 - Compute Ambient Lighting\\ \\
+To ensure that objects aren't fully black in areas not directly lit, we add a small ambient lighting contribution: \\ \\$ambient=ambientStrength×lightColor$ \\ \\
+where ambientStrength is usually small (e.g., 0.1).
+    \item Step 5 - Compute Final Color\\ \\
+The final fragment color is computed by adding ambient and diffuse contributions and multiplying by the object color:\\ \\
+$resultColor=(ambient+diffuse)×objectColor$
+\end{enumerate}
+
+I modified the generic code for problem 3 and input the values necessary:
+\begin{minted}{python}
+###########
+# PROBLEM 3
+###########
+
+# Define the light source position in world space
+light_pos = np.array([0.0, 1.0, -10.0])  # Example light position
+
+# Define the fragment's world position (position of the surface point)
+frag_pos = np.array([-15.0, 18.0, 11.0])  # Example fragment position
+
+# Define the normal vector at the fragment (should be unit length)
+normal = np.array([1.0, 0.0, 0.0])  # Example normal pointing along Z-axis
+
+# Define the object's base color (RGB)
+object_color = np.array([0.7, 0.2, 0.7])  # Example reddish-orange object
+
+# Define the light color (RGB)
+light_color = np.array([0.9, 0.9, 0.5])  # White light
+
+# Compute the normalized normal vector
+norm = normal / np.linalg.norm(normal)
+
+# Compute the normalized light direction vector
+light_dir = light_pos - frag_pos  # Compute direction from fragment to light
+light_dir = light_dir / np.linalg.norm(light_dir)  # Normalize
+
+# Compute the diffuse component using the dot product
+diff = max(np.dot(norm, light_dir), 0.0)  # Ensure non-negative
+
+# Compute the diffuse lighting contribution
+diffuse = diff * light_color
+
+# Compute an example ambient lighting contribution (soft base lighting)
+ambient_strength = 0.1
+ambient = ambient_strength * light_color
+
+# Compute final color by combining ambient and diffuse effects
+result_color = (ambient + diffuse) * object_color
+
+# Display the results
+result_color
+print(f"PROBLEM 3 - result = {result_color}")
+\end{minted}
+
+Here was my result: \textbf{PROBLEM 3 - result = [0.36879482 0.10536995 0.20488601]}
+\subsection*{4. (8 pts)}
+Calculate the specular lighting at the point in question 3, given the eye position of the pilot at \((-10, 30, -10)\). Due to atmospheric oddities, the planet’s specular lighting is a bright red with \(\text{RGB} = (1.0, 0.1, 0.1)\). Assume a specular lighting exponent of \(32\).
+
+I wrote this code on my own following the "Specular Lighting" section in the Learn OpenGL website: 
+\begin{minted}{python}
+###########
+# PROBLEM 4
+###########
+
+# set view position
+view_pos = np.array([10.0, 30.0, -10.0])
+
+# set specular strength
+specular_strength = 0.5
+
+# set new fragment position, which is the position of the surface point
+frag_pos = np.array([-15.0, 18.0, 11.0])
+
+# normalize the view direction (result should be a unit vector)
+view_dir = np.linalg.norm(view_pos - frag_pos)
+
+# define reflect function 
+"""
+From the OpenGL Shading Language Specification - https://registry.khronos.org/OpenGL-Refpages/gl4/html/reflect.xhtml:
+For a given incident vector I and surface normal N reflect returns the reflection direction calculated as I - 2.0 * dot(N, I) * N.
+
+N should be normalized in order to achieve the desired result.
+"""
+def reflect(I, N):
+    return I - 2.0 * np.dot(N, I) * N
+# set the incident vector
+I = np.array([0.0, 1.0, 0.0]) 
+# set the normal vector
+N = np.array([0.0, 1.0, 0.0]) 
+# normalize the normal vector
+N = N / np.linalg.norm(N) 
+# compute the reflection vector (the reflection direction)
+R = reflect(-I, N)
+
+# calculate the specular component
+spec = max(np.dot(view_dir, R), 0.0) ** 32 # this should be a float
+
+specular = specular_strength * spec * light_color
+
+# set object color, which is a bright red - RGB = (1.0, 0.1, 0.1)
+object_color = np.array([1.0, 0.1, 0.1])
+
+# compute the final color
+result_color = (ambient + diffuse + specular) * object_color
+# Display the results
+print(f"PROBLEM 4 - result = {result_color}")
+\end{minted}
+
+Before I ran it though, I knew that I had not likely filled everything out that needed to be filled out, so I gave chatgpt the content and asked: 
+\begin{verbatim}
+    i believe I've filled everything in correctly except the incident vector and N. tell me if i'm correct in this assumption
+\end{verbatim}
+
+It told me to fix the following: 
+\begin{verbatim}
+    # Define the sphere center (assuming planet is centered at the origin)
+sphere_center = np.array([0.0, 0.0, 0.0])
+
+# Compute the correct normal vector (from sphere center to fragment)
+N = (frag_pos - sphere_center) / np.linalg.norm(frag_pos - sphere_center)
+
+# Compute the correct incident light direction (from light source to fragment)
+I = (light_pos - frag_pos) / np.linalg.norm(light_pos - frag_pos)
+
+# Compute the correct view direction (from fragment to eye)
+view_dir = (view_pos - frag_pos) / np.linalg.norm(view_pos - frag_pos)
+
+
+\end{verbatim}
+Here was my final code: 
+\begin{minted}{python}
+###########
+# PROBLEM 4
+###########
+
+# set view position
+view_pos = np.array([10.0, 30.0, -10.0])
+
+# set specular strength
+specular_strength = 0.5
+
+# set new fragment position, which is the position of the surface point
+frag_pos = np.array([-15.0, 18.0, 11.0])
+
+# normalize the view direction (result should be a unit vector)
+view_dir = (view_pos - frag_pos) / np.linalg.norm(view_pos - frag_pos)
+
+
+# define reflect function 
+"""
+From the OpenGL Shading Language Specification - https://registry.khronos.org/OpenGL-Refpages/gl4/html/reflect.xhtml:
+For a given incident vector I and surface normal N reflect returns the reflection direction calculated as I - 2.0 * dot(N, I) * N.
+
+N should be normalized in order to achieve the desired result.
+"""
+def reflect(I, N):
+    return I - 2.0 * np.dot(N, I) * N
+# set the incident vector
+I = (light_pos - frag_pos) / np.linalg.norm(light_pos - frag_pos) # ensures light is coming from "correct direction"
+
+# set the normal vector
+sphere_center = np.array([0.0, 0.0, 0.0])  # Assuming planet center is at (0,0,0)
+N = (frag_pos - sphere_center) / np.linalg.norm(frag_pos - sphere_center)
+
+# compute the reflection vector (the reflection direction)
+R = reflect(-I, N)
+
+# calculate the specular component
+spec = max(np.dot(view_dir, R), 0.0) ** 32 # this should be a float
+
+specular = specular_strength * spec * light_color
+
+# set object color, which is a bright red - RGB = (1.0, 0.1, 0.1)
+object_color = np.array([1.0, 0.1, 0.1])
+
+# compute the final color
+result_color = (ambient + diffuse + specular) * object_color
+# Display the results
+print(f"PROBLEM 4 - result = {result_color}")
+\end{minted}
+Here was my result: \textbf{PROBLEM 4 - specular = [5.15843227e-20 5.15843227e-20 2.86579571e-20]}
+\subsection*{5. (5 pts)}
+Calculate the final lighting of the point on the planet’s surface described in question 3, accounting for the diffuse, specular, and ambient lighting.
+For this problem, we already had the above code for the final resulting color: 
+\begin{minted}{python}
+    # set object color, which is a bright red - RGB = (1.0, 0.1, 0.1)
+object_color = np.array([1.0, 0.1, 0.1])
+
+# compute the final color
+result_color = (ambient + diffuse + specular) * object_color
+# Display the results
+print(f"PROBLEM 4 - result = {result_color}")
+\end{minted}
+Here was the result: \textbf{PROBLEM 5 - result = [0.52684974 0.05268497 0.02926943]}
+\section{Works Cited}
+\begin{enumerate}
+    \item ChatGPT. Please see in text-citations/descriptions, footnotes, and the below appendix A (which includes a whole chat that I couldn't share since i had given it images from the text book and you can't share chats with images).
+    \item Github Copilot. I used this in vscode for formatting the .tex file for overleaf.
+\end{enumerate}
+\newpage
+\appendix
+\section{Appendix A - Chat that Gave me Code}
+\includepdf[pages=-, pagecommand={}]{code_chat_appendix_A.pdf}
+\end{document}
