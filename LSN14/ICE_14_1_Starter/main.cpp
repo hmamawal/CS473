@@ -124,7 +124,7 @@ int main () {
     font_shader.setMat4("view",identity);
     font_shader.setMat4("projection",glm::ortho(-1.0,1.0,-1.0,1.0,-1.0,1.0));
     font_shader.setVec4("transparentColor", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    font_shader.setFloat("alpha", 0.3);
+    font_shader.setFloat("alpha", 0.0);//0.3); - for transparency
     font_shader.setInt("texture1", 0);
     
     shader.use();
@@ -194,10 +194,22 @@ int main () {
         left_side.Draw();
         front_side.Draw();
 
+        // heads up display
+
         //Draw the text
         font_shader.use();
-        arial_font.DrawText("Hello, World!",glm::vec2(0.0,0.0),font_shader);
-        arial_font.DrawCharacter('*',glm::vec2(-0.05,0.0),font_shader);
+        // TODO: get location of the camera with camera.Position, then 
+        // display camera x, y, z to display location
+
+        // display the distance from the camera to the origin
+        std::string display_string = "Distance: ";
+        display_string += std::to_string(glm::distance(camera.Position, 
+                                            glm::vec3(0.0, 0.0, 0.0))); // the vec3(0.0, 0.0, 0.0) is the origin
+        display_string = display_string.substr(0, display_string.find(".")+2); // limit to 6 characters
+        arial_font.DrawText(display_string,glm::vec2(0.0,0.0),font_shader);
+
+        //arial_font.DrawText("Hello, World!",glm::vec2(0.0,0.0),font_shader);
+        //arial_font.DrawCharacter('*',glm::vec2(-0.05,0.0),font_shader);
         shader.use();
 
         //check and call events and swap the buffers
