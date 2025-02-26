@@ -16,7 +16,7 @@ BasicShape GetHull (VAOStruct vao, glm::vec3 lower_left, float width, float heig
 BasicShape GetTexturedHull (VAOStruct vao, glm::vec3 lower_left, float width, float height);
 
 //Creates and returns a BasicShape rectangle given a VAO, location, width, and height
-BasicShape GetRectangle(VAOStruct vao, glm::vec3 lower_left, float width, float height);
+BasicShape GetRectangle(VAOStruct vao, glm::vec3 lower_left, float width, float height, bool flip_normal = false);
 
 //Creates and returns a BasicShape rectangle given a VAO, location, width, and height
 BasicShape GetTexturedRectangle(VAOStruct vao, glm::vec3 lower_left, float width, float height, 

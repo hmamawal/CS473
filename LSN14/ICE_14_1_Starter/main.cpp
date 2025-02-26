@@ -65,7 +65,9 @@ int main () {
     //1. define your Vertex Array Object, used to hold attribute pointers
     VAOStruct position_vao;
     glGenVertexArrays(1,&(position_vao.id));
-    AttributePointer position_attr = BuildAttribute(3,GL_FLOAT,false,3*sizeof(float),0);
+    AttributePointer position_attr = BuildAttribute(3,GL_FLOAT,false,6*sizeof(float),0);
+    AttributePointer normal_attr2 = BuildAttribute(3,GL_FLOAT,false,6*sizeof(float),3*sizeof(float));
+    position_vao.attributes.push_back(normal_attr2);
     position_vao.attributes.push_back(position_attr);
 
     VAOStruct texture_vao;
@@ -79,7 +81,9 @@ int main () {
 
     //initialize the font
     arial_font.initialize(texture_vao);
- 
+    // create panes of glass
+    BasicShape pane = GetRectangle(position_vao,glm::vec3(-0.5,-0.5,0.0),1.0,1.0, false);
+
     BasicShape floor = GetTexturedRectangle(texture_vao, glm::vec3(-10.0,-10.0,0.0),20.0,20.0,20.0,false);
 
     BasicShape bottom = GetTexturedRectangle(texture_vao,glm::vec3(-0.25,-0.25,0.0),0.5,0.5,1.0,true);
@@ -194,7 +198,26 @@ int main () {
         left_side.Draw();
         front_side.Draw();
 
-        // heads up display
+        // draw transparent objects here
+        local = identity;
+        local = glm::translate(local, glm::vec3(0.0,-5.0,1.0));
+        local = glm::scale(local,glm::vec3(10.0,10.0,1.0));
+        shader.setMat4("local",local);
+        shader.setBool("is_textured",false);
+        shader.setVec4("color",glm::vec4(1.0,0.0,0.0,0.5)); // red
+        pane.Draw();
+
+        // draw transparent objects here
+        local = identity;
+        local = glm::translate(local, glm::vec3(0.0,-5.0,-2.0));
+        local = glm::scale(local,glm::vec3(10.0,10.0,1.0));
+        shader.setMat4("local",local);
+        shader.setBool("is_textured",false);
+        //blue
+        shader.setVec4("color",glm::vec4(0.0,0.0,1.0,0.5));
+        pane.Draw();
+
+        // heads up display here
 
         //Draw the text
         font_shader.use();

@@ -178,12 +178,16 @@ BasicShape GetHull (VAOStruct vao, glm::vec3 lower_left, float width, float heig
 
 }
 
-BasicShape GetRectangle(VAOStruct vao, glm::vec3 lower_left, float width, float height) {
+BasicShape GetRectangle(VAOStruct vao, glm::vec3 lower_left, float width, float height, bool flip_normal) {
+    glm::vec3 n (0.0,0.0,1.0);
+    if (flip_normal) {
+        n = -n;
+    }
     float vertices[] {
-        lower_left.x,lower_left.y,0.0, //lower left
-        lower_left.x+width, lower_left.y, 0.0, //lower right
-        lower_left.x+width, lower_left.y+height,0.0, //upper right
-        lower_left.x,lower_left.y+height,0.0//upper left
+        lower_left.x,lower_left.y,0.0,n.x,n.y,n.z, //lower left
+        lower_left.x+width, lower_left.y, 0.0,n.x,n.y,n.z, //lower right
+        lower_left.x+width, lower_left.y+height,0.0,n.x,n.y,n.z, //upper right
+        lower_left.x,lower_left.y+height,0.0,n.x,n.y,n.z//upper left
     };
     
     unsigned int indices[]{
