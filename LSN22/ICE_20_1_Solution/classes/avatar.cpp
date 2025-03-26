@@ -34,10 +34,6 @@ void Avatar::Scale(glm::vec3 new_scale) {
     this->scale = new_scale;
 }
 
-glm::vec3 Avatar::GetPosition() {
-    return this->position;
-}
-
 void Avatar::Draw(Shader *shader, bool use_shader) {
     if (use_shader) {
         //prevents us from unnecessarily 'switching'

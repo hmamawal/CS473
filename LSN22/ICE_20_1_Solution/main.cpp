@@ -182,15 +182,13 @@ int main()
     font_program.setMat4("view",identity);
     font_program.setMat4("projection",glm::ortho(-1.0,1.0,-1.0,1.0,-1.0,1.0));
     font_program.setVec4("transparentColor", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    font_program.setFloat("alpha", 0.0); // to get rid of the red boxes, change 0.3 to 0.0
+    font_program.setFloat("alpha", 0.3);
     font_program.setInt("texture1", 0);
 
     //Set up the depth test and blending
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_STENCIL_TEST);
-    glStencLoop // TO DO: FIX THIS
 
     // render loop
     // -----------
@@ -208,7 +206,7 @@ int main()
         // render
         // ------
         glClearColor(clear_color.r,clear_color.g,clear_color.b,clear_color.a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //use the shader program (this is necessary because we 
         // use the font shader program at the end of the render loop)
@@ -271,11 +269,14 @@ int main()
         }
         //Draw the text so that it stays with the camera
         font_program.use();
-        std::string display_string = "Distance: ";
-        float dist = glm::distance(camera.Position, ship.GetPosition());
-        std::string dist_string = std::to_string(dist);
-        dist_string = dist_string.substr(0,dist_string.find(".")+2);
-        display_string += dist_string;
+        std::string display_string = "Camera (";
+        std::string cam_x = std::to_string(camera.Position.x);
+        std::string cam_y = std::to_string(camera.Position.y);
+        std::string cam_z = std::to_string(camera.Position.z);
+
+        display_string += cam_x.substr(0,cam_x.find(".")+3) +",";
+        display_string += cam_y.substr(0,cam_y.find(".")+3) +",";
+        display_string += cam_z.substr(0,cam_z.find(".")+3) +")";
         
         arial_font.DrawText(display_string,glm::vec2(-0.1,0.75),font_program);
 
