@@ -150,6 +150,10 @@ int main()
     unsigned int floor_texture = GetTexture("./textures/hull_texture.png");
     
     BasicShape floor = GetTexturedRectangle(texture_vao,glm::vec3(-50.0,-50.0,0.0),100.0,100.0,20.0,false);
+    BasicShape scene = GetTexturedRectangle(texture_vao,glm::vec3(-1.0,-1.0,0.0),2.0,2.0);
+
+    // Create a new textured rectangle to fill the screen
+    BasicShape screen_quad = GetTexturedRectangle(texture_vao, glm::vec3(-1.0, -1.0, 0.0), 2.0, 2.0);
 
     //set up the shader program    
     shader_program.use();
@@ -190,6 +194,51 @@ int main()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Create framebuffer object
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    // Create texture for color buffer
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Attach texture to framebuffer as color attachment
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+    // Create renderbuffer object for depth and stencil testing
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    // Attach renderbuffer to framebuffer
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // Check if framebuffer is complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+
+    // Unbind framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // inpyt 
+    // -----
+    ProcessInput(window);
+    ship.ProcessInput(window,delta_time);
+
+    // Declare variables once outside the loop
+    std::string display_string;
+    std::string cam_x;
+    std::string cam_y;
+    std::string cam_z;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -203,13 +252,13 @@ int main()
         ProcessInput(window);
         ship.ProcessInput(window,delta_time);
 
-        // render
-        // ------
-        glClearColor(clear_color.r,clear_color.g,clear_color.b,clear_color.a);
+        // First pass: render to framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
-        //use the shader program (this is necessary because we 
-        // use the font shader program at the end of the render loop)
+        // Render the scene
         shader_program.use();
 
         //set up the view matrix (camera)
@@ -269,10 +318,10 @@ int main()
         }
         //Draw the text so that it stays with the camera
         font_program.use();
-        std::string display_string = "Camera (";
-        std::string cam_x = std::to_string(camera.Position.x);
-        std::string cam_y = std::to_string(camera.Position.y);
-        std::string cam_z = std::to_string(camera.Position.z);
+        display_string = "Camera (";
+        cam_x = std::to_string(camera.Position.x);
+        cam_y = std::to_string(camera.Position.y);
+        cam_z = std::to_string(camera.Position.z);
 
         display_string += cam_x.substr(0,cam_x.find(".")+3) +",";
         display_string += cam_y.substr(0,cam_y.find(".")+3) +",";
@@ -280,15 +329,59 @@ int main()
         
         arial_font.DrawText(display_string,glm::vec2(-0.1,0.75),font_program);
 
-    
-       
+        // Second pass: render to default framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);   // Reset viewport
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Set up shader with identity matrices
+        shader_program.use();
+        glm::mat4 identity(1.0);
+        shader_program.setMat4("model", identity);
+        shader_program.setMat4("view", identity);
+        shader_program.setMat4("projection", identity);
+
+        // Set shader state to TEXTURED and disable depth test for screen quad
+        shader_program.setInt("shader_state", TEXTURED);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+
+        // Draw the screen quad
+        screen_quad.Draw();
+        glEnable(GL_DEPTH_TEST);  // Re-enable for later drawing if needed
+
+        // Restore the projection matrix
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (1.0f * SCR_WIDTH) / (1.0f * SCR_HEIGHT), 0.1f, 100.0f);
+        shader_program.setMat4("projection", projection);
+
+        // Adjust the font shader's model matrix to avoid z-fighting
+        font_program.use();
+        glm::mat4 font_model = glm::translate(identity, glm::vec3(0.0, 0.0, 0.1));
+        font_program.setMat4("model", font_model);
+
+        // Draw the text (e.g., camera position)
+        display_string = "Camera (";
+        cam_x = std::to_string(camera.Position.x);
+        cam_y = std::to_string(camera.Position.y);
+        cam_z = std::to_string(camera.Position.z);
+
+        display_string += cam_x.substr(0, cam_x.find(".") + 3) + ",";
+        display_string += cam_y.substr(0, cam_y.find(".") + 3) + ",";
+        display_string += cam_z.substr(0, cam_z.find(".") + 3) + ")";
+        arial_font.DrawText(display_string, glm::vec2(-0.1, 0.75), font_program);
+
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-
+    // Cleanup
+    screen_quad.DeallocateShape();
+    glDeleteFramebuffers(1, &fbo);
+    glDeleteTextures(1, &textureColorbuffer);
+    glDeleteRenderbuffers(1, &rbo);
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
@@ -354,4 +447,4 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.ProcessMouseMovement(xoffset,yoffset);
 
     
-}  
+}
