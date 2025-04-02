@@ -1,6 +1,5 @@
 #include "basic_shape.hpp"
 
-// Constructor: Initializes default values for BasicShape.
 BasicShape::BasicShape()
 {
     this->number_vertices = 0;
@@ -8,13 +7,6 @@ BasicShape::BasicShape()
     this->primitive = GL_TRIANGLES;
 }
 
-// Initialize: Sets up the shape's vertex data and uploads it to the GPU.
-// Parameters:
-// - vao: Vertex Array Object structure.
-// - vertices: Pointer to vertex data.
-// - vertices_bytes: Size of the vertex data in bytes.
-// - num_vertices: Number of vertices.
-// - prim: OpenGL primitive type.
 void BasicShape::Initialize(VAOStruct vao, float* vertices, int vertices_bytes, int num_vertices, GLuint prim)
 {
     this->vao = vao;
@@ -23,14 +15,9 @@ void BasicShape::Initialize(VAOStruct vao, float* vertices, int vertices_bytes, 
     glGenBuffers(1,&(this->vbo));
     glBindBuffer(GL_ARRAY_BUFFER,this->vbo);
     glBufferData(GL_ARRAY_BUFFER,vertices_bytes,vertices,GL_STATIC_DRAW);
+
 }
 
-// InitializeEBO: Sets up the Element Buffer Object (EBO) for indexed drawing.
-// Parameters:
-// - ebo_data: Array of index data.
-// - ebo_bytes: Size of the index data in bytes.
-// - num_indices: Number of indices.
-// - primitive: OpenGL primitive type for the indices.
 void BasicShape::InitializeEBO(unsigned int *ebo_data, int ebo_bytes, 
                             int num_indices, int primitive)
 {
@@ -41,18 +28,13 @@ void BasicShape::InitializeEBO(unsigned int *ebo_data, int ebo_bytes,
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,ebo_bytes,ebo_data,GL_STATIC_DRAW);
 }
 
-// Draw (with shader): Sets the shader program and invokes the default Draw routine.
-// Parameter:
-// - shader: Shader object containing the shader program ID.
 void BasicShape::Draw (Shader shader)
 {
     glUseProgram(shader.ID);
     this->Draw();
+
 }
 
-// DrawEBO: Binds the necessary buffers and renders the shape using the element array (indices).
-// Parameter:
-// - line_width: Specifies the width used when drawing lines.
 void BasicShape::DrawEBO (float line_width)
 {
     if (this->ebo == 0)
@@ -67,15 +49,14 @@ void BasicShape::DrawEBO (float line_width)
     glLineWidth(1.0);
 }
 
-// Draw: Renders the shape using the vertex data currently bound.
-// It assumes that the shader is already in use.
 void BasicShape::Draw ()
 {
+    //Assumes the shader has already been set (more efficient)
     BindVAO(this->vao,this->vbo,GL_ARRAY_BUFFER);
     glDrawArrays(this->primitive,0,this->number_vertices);
+
 }
 
-// DeallocateShape: Releases GPU resources by deleting the allocated VBO and EBO (if exists).
 void BasicShape::DeallocateShape()
 {
     glDeleteBuffers(1,&(this->vbo));
@@ -83,7 +64,6 @@ void BasicShape::DeallocateShape()
         glDeleteBuffers(1,&(this->ebo));
 }
 
-// GetVBO: Returns the identifier of the vertex buffer used by this shape.
 unsigned int BasicShape::GetVBO() {
     return this->vbo;
 }

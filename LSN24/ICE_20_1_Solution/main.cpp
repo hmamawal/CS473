@@ -6,6 +6,7 @@
 #include "classes/Font.hpp"
 #include "classes/import_object.hpp"
 #include "classes/avatar.hpp"
+#include "classes/test.hpp"
 
 //Enumeration Type: ObjectType
 //Determines how shaders will draw different objects:
@@ -64,9 +65,6 @@ Font arial_font ("fonts/ArialBlackLarge.bmp","fonts/ArialBlack.csv",0.1,0.15);
 //shader state (determines how to draw items)
 ObjectType shader_state = BASIC;
 
-// Function: main
-// Description: Initializes the environment, shaders, vertex array objects, models,
-// and enters the main rendering loop while handling events and cleanup.
 int main()
 {
     //Initialize the environment, if it fails, return -1 (exit)
@@ -143,7 +141,7 @@ int main()
     // for (int i = 0; i < die_textures.size(); i++) {
     //     std::cout<<"Texture:"<<i<<" "<<die_textures[i]<<std::endl;
     // }
-    Avatar ship((importer.loadFiles("models/ship",import_vao)),90.0f,glm::vec3(2.0,1.0,0.0),IMPORTED_BASIC);;
+    TestChild ship("name", (importer.loadFiles("models/ship",import_vao)),90.0f,glm::vec3(2.0,1.0,0.0),IMPORTED_BASIC);;
     ship.Scale(glm::vec3(0.4,0.4,0.4));
 
     arial_font.initialize(texture_vao);
@@ -193,6 +191,8 @@ int main()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    std::cout<<"Child name: "<<ship.GetName()<<std::endl;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -230,9 +230,14 @@ int main()
         shader_program.setMat4("local",smiley_local);
         smiley.Draw();
 
-        //draw the ship, don't need to use the shader program here
-        //   since we already did at the top of the render loop.
-        ship.Draw(&shader_program,false);
+        //draw the ship
+        //shader_program.setInt("shader_state",IMPORTED_BASIC);
+        //glm::mat4 ship_local(1.0);
+        //ship_local = glm::translate(ship_local,glm::vec3(2.0,1.0,0.0));
+        //ship_local = glm::scale(ship_local,glm::vec3(0.4,0.4,0.4));
+        //shader_program.setMat4("local",ship_local);
+        ship.Draw(&shader_program);
+       
 
         //Draw the floor
         shader_program.setInt("shader_state",TEXTURED);
@@ -302,6 +307,7 @@ int main()
     
     smiley.DeallocateShape();
     die.DeallocateShape();
+    ship.DeallocateAvatar();
 
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
@@ -310,8 +316,8 @@ int main()
     return 0;
 }
 
-// Function: ProcessInput
-// Description: Processes keyboard input for moving the camera and exiting the application.
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
 void ProcessInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -336,8 +342,6 @@ void ProcessInput(GLFWwindow *window)
 
 }
 
-// Function: mouse_callback
-// Description: Processes mouse movement events to update the camera orientation.
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (first_mouse)
@@ -359,4 +363,4 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.ProcessMouseMovement(xoffset,yoffset);
 
     
-}
+}  

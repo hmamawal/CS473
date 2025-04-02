@@ -1,7 +1,6 @@
 #include "Shader.hpp"
 #include <glm/gtc/type_ptr.hpp>
 
-// Constructs the Shader: loads source code from file paths, compiles the shaders, and links them into a shader program.
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
         // 1. retrieve the vertex/fragment source code from filePath
         std::string vertexCode;
@@ -56,38 +55,31 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
         glDeleteShader(fragment);
 }
 
-// Activates the shader program for subsequent rendering calls.
 void Shader::use() {
     glUseProgram(this->ID);
 }
 
-// Sets a boolean uniform variable in the shader.
 void Shader::setBool(const std::string &name, bool value) const {
     glUniform1i(glGetUniformLocation(this->ID,name.c_str()),(int)value);
 }
 
-// Sets an integer uniform variable in the shader.
 void Shader::setInt(const std::string &name, int value) const {
     glUniform1i(glGetUniformLocation(this->ID,name.c_str()),value);
 }
 
-// Sets a float uniform variable in the shader.
 void Shader::setFloat(const std::string &name, float value) const {
     glUniform1f(glGetUniformLocation(this->ID,name.c_str()),value);
 }
 
-// Sets a vec4 uniform variable in the shader.
 void Shader::setVec4(const std::string &name, glm::vec4 vec) const {
     glUniform4f(glGetUniformLocation(this->ID,name.c_str()),vec.x, vec.y,vec.z,vec.w);
 }
 
-// Sets a 4x4 matrix uniform variable in the shader.
 void Shader::setMat4 (const std::string &name, glm::mat4 m) const 
 {
     glUniformMatrix4fv(glGetUniformLocation(this->ID,name.c_str()),1,GL_FALSE,glm::value_ptr(m));
 }
 
-// Checks for compilation or linking errors for a given shader or program.
 void Shader::checkCompileErrors(unsigned int shader, std::string type) {
     int success;
         char infoLog[1024];

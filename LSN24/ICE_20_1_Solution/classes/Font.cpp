@@ -4,16 +4,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdlib.h>
 
-// Constructor: Initializes Font with bitmap filename, CSV filename and scaling factors.
+/////////////////////////////// Initialization functions
 Font::Font(std::string fontBMP, std::string fontCSV,float scaleX,float scaleY)
 {
     this->BMPfilename = fontBMP;
     this->CSVfilename = fontCSV;
     this->scaleX = scaleX;
     this->scaleY = scaleY;
+    
 }
 
-// initialize: Loads texture, parses CSV for font metrics and sets up character shapes.
 void Font::initialize(VAOStruct vao) {
     this->vao = vao;
     this->texNumber = GetTexture(this->BMPfilename,true);
@@ -54,7 +54,8 @@ void Font::initialize(VAOStruct vao) {
     }
 }
 
-// DrawCharacter: Renders a single character at a given position and depth.
+//Draw a single character, given a single character, a location (x,y) for the
+// character, a shader program, and a depth (z).
 void Font::DrawCharacter (char letter, glm::vec2 loc, Shader sProgram, float depth_change) {
     sProgram.use();
     glm::mat4 mod = glm::mat4(1.0f);
@@ -75,7 +76,7 @@ void Font::DrawCharacter (char letter, glm::vec2 loc, Shader sProgram, float dep
 
 }
 
-// DrawText: Renders a string of text by drawing each character in sequence.
+//Given a string, draw all the characters to the screen.
 void Font::DrawText(std::string s, glm::vec2 start, Shader sProgram) {
     float depth = -0.01;
     for (int i = 0; i < s.length(); i++) {
@@ -91,34 +92,30 @@ void Font::DrawText(std::string s, glm::vec2 start, Shader sProgram) {
     }
 }
 
-// setScale: Updates the scaling factors for the font if provided values are positive.
+
+/////////////////////////////// Setter functions
 void Font::setScale(glm::vec2 newScale) {
     if (newScale.x > 0) this->scaleX = newScale.x;
     if (newScale.y > 0) this->scaleY = newScale.y;
 }
 
-// getEndNum: Returns the computed end character number.
+/////////////////////////////// Getter functions
 int Font::getEndNum() {return this->endNum;}
-
-// getStartNum: Returns the starting character number.
 int Font::getStartNum() {return this->startNum;}
-
-// getTexNum: Returns the texture number for the font bitmap.
 unsigned int Font::getTexNum() {return this->texNumber;}
-
-// getCharShape: Retrieves the BasicShape structure for the given character index.
 BasicShape Font::getCharShape(int index) {
     if (index < 0 || index > 255) throw std::invalid_argument("Invalid index to Font::getCharVAO");
     return this->charVAOs[index];
 }
-
-// getCharWidth: Returns the width of the character at the given index.
 int Font::getCharWidth(int index) {
     if (index < 0 || index > 255) throw std::invalid_argument("Invalid index to Font::getCharWidth");
     return this->charWidth[index];
 }
 
-// getTexCoords: Computes and returns texture coordinates for a given character.
+
+/////////////////////////////// Private functions
+
+/** Returns texture coordinates for a given character */
 glm::vec2 Font::getTexCoords(unsigned char c) {
     int ascii = (int)c;
     int col = ascii % this->cellsRow;
@@ -129,7 +126,6 @@ glm::vec2 Font::getTexCoords(unsigned char c) {
     return glm::vec2(texX, texY);
 }
 
-// genCharShape: Constructs the vertex data for a character's shape based on texture metrics.
 void Font::genCharShape(BasicShape *shape, unsigned char c) {
     
     glm::vec2 ulh = this->getTexCoords(c);

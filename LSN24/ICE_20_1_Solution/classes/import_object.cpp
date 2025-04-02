@@ -8,24 +8,25 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-// Constructor: Initializes an ImportOBJ instance.
+
 ImportOBJ::ImportOBJ() {
 }
 
-// loadFiles: Loads material (.mtl) and object (.obj) files using baseName, then generates and returns a BasicShape.
 BasicShape ImportOBJ::loadFiles(std::string baseName, VAOStruct vao) {
     this->reset();
     std::string matName = baseName + ".mtl";
     std::string objName = baseName + ".obj";
     this->readMTLFile(matName);
     std::cout<<"Read MTL File:"<<matName<< std::endl;
+    if (this->material_map.size() == 0) {
+        std::cerr<<"Error: No materials found in "<<matName<<std::endl;
+    }
     this->readOBJFile(objName);
     std::cout<<"Read OBJ File"<<objName<<std::endl;
 
     return this->genShape(vao);
 }
 
-// getTexture: Retrieves the texture ID at a given index and handles out-of-range errors.
 unsigned int ImportOBJ::getTexture(int index) {
     unsigned int texture = 99;
    try {
@@ -37,12 +38,10 @@ unsigned int ImportOBJ::getTexture(int index) {
    }
 }
 
-// getAllTextures: Returns a vector containing all loaded texture IDs.
 std::vector<unsigned int> ImportOBJ::getAllTextures() {
     return this->textures;
 }
 
-// readMTLFile: Reads a material file (.mtl), parses its content, and stores material properties.
 void ImportOBJ::readMTLFile(std::string fName) {
     std::ifstream infile(fName.c_str());
     if (infile.fail()) {
@@ -105,7 +104,6 @@ void ImportOBJ::readMTLFile(std::string fName) {
     }
 }
 
-// GetVecStr: Converts a glm::vec3 to a comma-separated string representation.
 std::string GetVecStr (glm::vec3 v) {
         std::string s{};
         s += std::to_string(v.r) + ",";
@@ -114,7 +112,6 @@ std::string GetVecStr (glm::vec3 v) {
         return s;
 }
 
-// PrintMaterials: Iterates over and prints all stored material information to the console.
 void ImportOBJ::PrintMaterials() {
     std::map<std::string,Material>::iterator i;
 
@@ -131,7 +128,7 @@ void ImportOBJ::PrintMaterials() {
 
 }
 
-// readOBJFile: Reads an .obj file, parsing vertices, normals, texture coordinates, and faces.
+/** Loads .OBJ file into the ImportOBJ data structures */
 void ImportOBJ::readOBJFile(std::string fName) {
     std::ifstream infile(fName.c_str());
     if (infile.fail()) {
@@ -195,12 +192,11 @@ void ImportOBJ::readOBJFile(std::string fName) {
     }
 }
 
-// getNumCombined: Returns the count of combined vertex data (CompleteVertex) generated from the .obj file.
 int ImportOBJ::getNumCombined() {
     return this->combinedData.size();
 }
 
-// genShape: Creates a BasicShape using combined vertex data and the provided VAOStruct.
+/** Generates a BasicShape from stored vertices and texture coordinates. */
 BasicShape ImportOBJ::genShape(VAOStruct vao) {
     BasicShape new_shape;
     
@@ -213,7 +209,7 @@ BasicShape ImportOBJ::genShape(VAOStruct vao) {
 
 }
 
-// reset: Clears all internal data structures (vertices, normals, textures, etc.) for a fresh start.
+/** Clears all internal data structures */
 void ImportOBJ::reset() {
     this->vertices.clear();
     this->normals.clear();
@@ -223,7 +219,7 @@ void ImportOBJ::reset() {
     this->textures.clear();
 }
 
-// readLineFace: Breaks down a face line (from an .obj file) into individual vertex definitions.
+/** Only works with faces broken down into triangles */
 void ImportOBJ::readLineFace(std::string line) {
     int firstVertexStart = 2;
     int secondVertexStart = line.find(" ", firstVertexStart) + 1;
@@ -234,7 +230,8 @@ void ImportOBJ::readLineFace(std::string line) {
     
 }
 
-// readFace: Parses a segment of a face line and constructs a CompleteVertex from the referenced vertex, texture, and normal data.
+// Given a string in the format:
+// xx/yy/zz returns a ivec3 of (xx, yy, zz)
 void ImportOBJ::readFace(std::string lineSegment) {
     // std::cout<<"Line: "<<lineSegment<<std::endl;
     int indexY = lineSegment.find("/", 0) + 1;
@@ -247,24 +244,33 @@ void ImportOBJ::readFace(std::string lineSegment) {
     newVert.Position = this->vertices.at(x);
     newVert.TexCoords = this->textCoords.at(y);
     newVert.Normal = this->normals.at(z);
-    newVert.aColor = this->curMat->ambient;
-    newVert.Color = this->curMat->diffuse;
-    newVert.sColor = this->curMat->specular;
-    newVert.opacity = this->curMat->opacity;
-    if (this->curMat->textured) {
-        newVert.texture_index = 1.0f*this->curMat->texture_index;
+    if(this->curMat == NULL) {
+        std::cerr<<"Error: No material set for vertex "<<x<<","<<y<<","<<z<<std::endl;
+        newVert.aColor = glm::vec3(1.0,1.0,1.0);
+        newVert.Color = glm::vec3(1.0,1.0,1.0);
+        newVert.sColor = glm::vec3(1.0,1.0,1.0);
+        newVert.opacity = 1.0f;
+        newVert.texture_index = 0.0f;
+    } else {
+        newVert.aColor = this->curMat->ambient;
+        newVert.Color = this->curMat->diffuse;
+        newVert.sColor = this->curMat->specular;
+        newVert.opacity = this->curMat->opacity;
+        if (this->curMat->textured) {
+            newVert.texture_index = 1.0f*this->curMat->texture_index;
+        }
     }
+
+    
     this->combinedData.push_back(newVert);
 
 }
 
-// getFloat: Extracts and returns a floating-point number from the specified line.
 float ImportOBJ::getFloat (std::string line) {
     int indexD = line.find(" ",0)+1;
     return strtof(line.substr(indexD,line.find(".",0)+4).c_str(),NULL);
 }
 
-// getVec3: Parses a line to extract and return a glm::vec3 representing three components.
 glm::vec3 ImportOBJ::getVec3(std::string line) {
     // Line format, where _ is a space and XX designates the info on the line
     // mtllib = file name for materials
@@ -285,7 +291,6 @@ glm::vec3 ImportOBJ::getVec3(std::string line) {
     return glm::vec3(x, y, z);
 }
 
-// getVec2: Parses a line to extract and return a glm::vec2 representing two components (used for texture coordinates).
 glm::vec2 ImportOBJ::getVec2(std::string line) {
     // As getVec3, except only gets x and y
     // Used primarily for vt coordinates

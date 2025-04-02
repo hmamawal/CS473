@@ -1,49 +1,39 @@
 #include "avatar.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
-// Constructor: Initializes the Avatar object with the given shape, orientation, position, and shader state.
-// It also sets default values for speed, rotation speed, and scale.
+
 Avatar::Avatar(BasicShape shape, float orientation, glm::vec3 initial_position, int shader_state) {
     this->body = shape;
     this->initial_rotation = orientation;
     this->current_rotation = 0.0;
     this->position = initial_position;
     this->shader_state = shader_state;
-    //both speed and rotate_speed could be separate parameters
     this->speed = 5.0;
-    this->rotate_speed = 90.0;
     this->scale = glm::vec3(1.0);
 }
 
-// Processes keyboard input to update the Avatar's position and rotation.
-// When the UP key is pressed, it moves the Avatar forward based on speed and elapsed time.
-// When the LEFT or RIGHT keys are pressed, it adjusts the current rotation.
+
 void Avatar::ProcessInput(GLFWwindow *window, float time_passed) {
     if (glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS) {
         float change_x = this->speed * time_passed * cos(glm::radians(this->current_rotation));
         float change_z = this->speed * time_passed * (-sin(glm::radians(this->current_rotation)));
         this->position += glm::vec3(change_x,0.0, change_z);
         if(glfwGetKey(window,GLFW_KEY_LEFT)==GLFW_PRESS) {
-            this->current_rotation += this->rotate_speed * time_passed;
+            this->current_rotation += 90.0 * time_passed;
         }
         if(glfwGetKey(window,GLFW_KEY_RIGHT)==GLFW_PRESS) {
-            this->current_rotation += -(this->rotate_speed) * time_passed;
+            this->current_rotation += -90.0 * time_passed;
         }
     }
+
 }
 
-// Scales the Avatar by updating its scale vector.
 void Avatar::Scale(glm::vec3 new_scale) {
     this->scale = new_scale;
 }
 
-// Draws the Avatar by applying translations, rotations, and scaling transformations.
-// If 'use_shader' is true, it calls shader->use() to activate the shader before drawing.
-// Then it sets the transformation matrix and shader state before drawing the body.
-void Avatar::Draw(Shader *shader, bool use_shader) {
-    if (use_shader) {
-        //prevents us from unnecessarily 'switching'
-        //  shader programs when we don't have to.
+void Avatar::Draw(Shader *shader) {
+    if (shader != NULL) {
         shader->use();
     }
     glm::mat4 local(1.0);
@@ -56,6 +46,17 @@ void Avatar::Draw(Shader *shader, bool use_shader) {
     this->body.Draw();
 }
 
+
 Avatar::~Avatar() {
+    //this->body.DeallocateShape();
+    //if Deallocate shape is called earlier than expected
+    // it will delete the data for your shape and cause a crash
+    // if that shape is drawn by another object.  
+}
+
+void Avatar::DeallocateAvatar() {
+    //do this explicitly at the end of your code to avoid a crash 
+    //  destructor is called automatically when the object goes out
+    //  of scope.
     this->body.DeallocateShape();
 }
