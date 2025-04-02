@@ -1,0 +1,90 @@
+ICE 24.1: Shadows (Directional Light)
+Shadows add realism to a scene with lighting. To create shadows, you must record the depth
+information from the light’s point of view. Here we start with a directional light because it hits all parts
+of the scene from the same direction, enabling all shading information to be stored in a single texture.
+1. Start with the Lesson 20 Solution (or your own from a later lesson).
+2. Modify the existing point light to make it a directional light in the fragment shader and in
+main.cpp
+a. Fragment shader:
+i. Rename the structure.
+ii. Change the position field to a direction field
+iii. Change the light uniform name from point_light to directional_light
+iv. Modify CalcPointLight to CalcDirectionalLight (Modify the name and light
+direction in the CalcPointLight function, light direction is just the negative of the
+Directional Light’s direction).
+b. Main.cpp:
+i. Add a light direction global variable (set to -1,-1,0).
+ii. Change the light settings in the shader to reflect the directional light structure
+(e.g., direction not position and directional_light vs point_light).
+3. Set up a depth map framebuffer just outside the render loop to store the depth information for
+the scene to a 2D Texture. The basic steps are as follows (details are nearly identical to the
+steps in the www.learnopengl.com Shadow Mapping tutorial:
+a. Define and generate the framebuffer.
+b. Define and generate a 2D texture to hold the depth information (the texture height and
+width can be set to 1024x1024 for a low resolution shadow and 2048x2048 for a higher
+resolution).
+c. Bind the framebuffer and attach the texture (ensure you use
+GL_DEPTH_ATTACHMENT...that's the only information we need to store).
+d. Note that setting glDrawBuffer and glRenderBuffer to GL_NONE allows you to set up
+your framebuffer without the color information (only depth).
+4. Here you will either need to create your own depth vertex and fragment shaders or add a new
+shader state for depth rendering. These are relatively straight forward and store the depth
+information. You can follow the procedure from the www.learnopengl.com tutorial. A uniform
+for the lightSpaceMatrix is used to provide the transformations needed to determine the
+fragment position from the light’s point of view.
+5. Create your light's point of view inside the render loop. These steps are also similar to the
+tutorial, but I recommend using the following for light orthographic projection (-100 to 100 for
+left/right and top/bottom, and -10 near and 150.0 far setting). For the light position needed for
+the orthographic view use 100.0 times the negative of the directional light.
+6. Set the shader program lightSpaceMatrix to this matrix value.
+7. Set up your code for two passes. Paste a copy of all the render code that renders the shapes
+under the current set of code (comment out the second pass, more on that in a moment)
+8. First Pass (in render loop):
+a. Set the glViewport to 0,0 and width and height you set up for your texture (it is okay if
+these do not match the screen size...actually preferred that they don't).
+b. Bind your depth map framebuffer.
+c. Render your scene using the depth map. This requires a little finesse. Make sure you
+are using your depth shader if you made one (or setting shader state to render to
+depth). The current Avatar sets the shader_state in its own draw function so you either
+need to remove that or add a parameter to the Avatar::Draw to override its default
+state.
+d. Set the glViewport back to the screen size, bind the default framebuffer, and clear the
+color and depth buffer bits (stencil too if needed).
+9. Second Pass (in render loop):
+a. Uncomment the copied code and correct/delete any errors caused by duplicated
+variables (e.g., do them only in the first pass).
+b. At this point, you have created your depth map (if all goes well), but you can't see the
+results. The next step is to use this information in the shadow shader.
+10. The original pass is the 'second' pass of the scene, but it still doesn't use the shadow
+information. This requires a few important steps.
+a. Add a uniform (mat4) for the light space matrix transformation to your vertex shader
+file.
+b. Add an output (vec4) for the fragment position in light space to the vertex shader file.
+Within main, set this output to the value of multiplying the uniform in part a to the
+fragment position (model * local * position).
+c. Add an input (vec4) for the item above (SAME NAME) to the fragment shader.
+d. Add a uniform sampler2D for the depth_image to the fragment shader.
+e. Update the fragment shader to account for shadow effects:
+i. Create a prototype for your shadow calculation above main in your fragment
+shader (shadow fragment shader):
+float ShadowCalculation(vec4 fragPosLightSpace, float bias);
+ii. You can grab the ShadowCalculation from learnopengl, but make sure you know
+how it works (set bias to zero to start with).
+1. Gets the fragment location from the light's perspective.
+2. Determines where that is in the texture.
+3. Compares the depth of the current fragment to the depth value in the
+same location in the depth map. If the current depth is greater than
+what's in the depth map, then this fragment is occluded from the light.
+iii. Use the shadow calculation in the calculation for the directional light.
+11. Back in main.cpp perform the following operations for the second pass.
+a. Make sure you are using the right shader program.
+b. Set the light space matrix uniform to the same glm∷mat4 used for the depth program
+(first pass).
+c. Bind the depth image to texture 1 (glActiveTexture(GL_TEXTURE1);
+glBindTexture(GL_TEXTURE_2D, depthMap);
+d. Use texture shader program’s setInt member function to set the depth image
+sampler2D uniform in the fragment shader to 1.
+e. NOTE: you will need to modify these steps if you have multiple textures you are using.
+12. Now you should have some kind of shadow but with issues, which can be resolved with
+adjustments indicated in the reading (aliasing, Peter Panning, Pixelated shadows). Work
+through the optimizations in the author’s tutorial (there are several, I’d use all of them)
